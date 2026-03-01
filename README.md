@@ -31,8 +31,8 @@ Diferente de implementações convencionais, este projeto foi desenvolvido com f
 
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/vdfs89/financas-do-zero.git](https://github.com/vdfs89/financas-do-zero.git)
-    cd financas-do-zero
+    git clone [https://github.com/vdfs89/InvestimentoDIO.git](https://github.com/vdfs89/InvestimentoDIO.git)
+    cd InvestimentoDIO
     ```
 
 2.  **Configure as chaves de API:**

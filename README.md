@@ -1,9 +1,12 @@
 
 # 💸 FinanceForge: Financial Mentor (DIO Challenge)
 
+
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
 ![Groq](https://img.shields.io/badge/Groq-f55036?style=for-the-badge)
+![Gemini](https://img.shields.io/badge/Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
 
 > **Status do Projeto:** 🚀 Deploy realizado com sucesso
 > **Demo:** [engtutor.streamlit.app](https://engtutor.streamlit.app/)

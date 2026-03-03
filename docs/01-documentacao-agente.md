@@ -1,18 +1,18 @@
 # 01 - Documentação do Agente FinanceForge
 
 ## Visão Geral
-O FinanceForge é um agente financeiro consultivo, resiliente e anti-alucinação, desenvolvido para o desafio Santander DIO. Utiliza dados reais mockados, failover multi-LLM e interface acessível.
+O FinanceForge é um agente financeiro consultivo, resiliente e anti-alucinação, desenvolvido para o desafio Bradesco DIO. Utiliza dados reais mockados, failover multi-LLM e interface acessível.
 
 ## Persona
-Cliente: João Silva
-Perfil: Conservador, busca orientação para investir com segurança.
+Cliente: Maria Souza
+Perfil: Moderado, busca orientação para investir com segurança e diversificar patrimônio.
 
 ## Diagrama de Arquitetura (Mermaid)
 
 ```mermaid
 graph TD
     subgraph Usuário
-        U1[João Silva]
+        U1[Maria Souza]
     end
     subgraph Interface
         S1[Streamlit]

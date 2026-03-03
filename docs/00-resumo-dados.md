@@ -1,13 +1,13 @@
 # 00 - Resumo dos Dados Mockados
 
-## Cliente: João Silva
-- Idade: 32
-- Profissão: Analista de Sistemas
+## Cliente: Maria Souza
+- Idade: 29
+- Profissão: Administradora
 - Perfil: Moderado
-- Objetivo: Construir reserva de emergência
-- Patrimônio: R$ 15.000
-- Reserva atual: R$ 10.000
-- Metas: Completar reserva (R$ 15.000 até 2026-06), entrada apartamento (R$ 50.000 até 2027-12)
+- Objetivo: Diversificar investimentos e aumentar patrimônio
+- Patrimônio: R$ 22.000
+- Reserva atual: R$ 8.000
+- Metas: Diversificar carteira (R$ 20.000 até 2026-12), comprar carro (R$ 35.000 até 2027-08)
 
 ## Transações Recentes
 | Data       | Descrição      | Categoria     | Valor   | Tipo    |

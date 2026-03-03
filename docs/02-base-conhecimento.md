@@ -1,7 +1,7 @@
 # 02 - Base de Conhecimento
 
 ## Dados Mockados
-- transacoes.csv: Histórico de transações do João Silva
+- transacoes.csv: Histórico de transações da Maria Souza
 - perfil_investidor.json: Perfil de risco, objetivos e restrições
 - produtos_financeiros.json: Produtos disponíveis
 - historico_atendimento.csv: Interações anteriores

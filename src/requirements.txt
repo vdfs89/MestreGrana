@@ -1,0 +1,6 @@
+streamlit
+groq
+google-generativeai
+openai
+gTTS
+pandas

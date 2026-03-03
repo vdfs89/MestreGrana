@@ -61,13 +61,13 @@ Consulte a pasta `docs/` para:
 
 ## 🏆 Referência DIO
 
-Este projeto segue o padrão do repositório BIA (Falvo Jr.), com melhorias de engenharia e UX. Todos os dados, prompts e diagramas estão alinhados ao roteiro oficial do desafio.
+Este projeto segue o padrão oficial DIO, com melhorias de engenharia e UX. Todos os dados, prompts e diagramas estão alinhados ao roteiro do desafio Bradesco.
 
 ---
 
 ## ✨ Sobre
 
-Desenvolvido por Vitor Silva para o bootcamp Santander DIO, aplicando técnicas de Engenharia de Software, IA Generativa e Ciência da Computação.
+Desenvolvido por Vitor Silva para o bootcamp Bradesco DIO, aplicando técnicas de Engenharia de Software, IA Generativa e Ciência da Computação.
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/vitor-silva-7418111a2)
 [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/vdfs89)

@@ -7,3 +7,5 @@ openai
 gTTS
 pandas
 langdetect
+
+matplotlib

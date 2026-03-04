@@ -27,7 +27,14 @@ mongo_client = MongoClient(MONGO_URI)
 mongo_db = mongo_client["mestre_grana_db"]  # Troque para o nome do seu banco
 produtos_collection = mongo_db["produtos_financeiros"]
 
+
 st.set_page_config(page_title="FinanceForge", page_icon="💸")
+
+# DEBUG: Exibir segredo MongoDB Atlas se disponível
+if "MONGODB_ATLAS_URI" in st.secrets:
+    st.info(f"MongoDB Atlas URI encontrada em st.secrets: {st.secrets['MONGODB_ATLAS_URI']}")
+else:
+    st.warning("MongoDB Atlas URI NÃO encontrada em st.secrets.")
 
 
 # Busca as chaves primeiro em st.secrets, depois em variáveis de ambiente

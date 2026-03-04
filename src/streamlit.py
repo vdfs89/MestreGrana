@@ -463,6 +463,15 @@ if st.button("Enviar feedback"):
     if feedback:
         with open("feedbacks.txt", "a", encoding="utf-8") as f:
             f.write(feedback + "\n---\n")
-        st.success("Obrigado pelo seu feedback!")
+        st.success("Obrigado pelo seu feedback! Sua opinião é fundamental para evoluirmos o MestreGrana.")
     else:
         st.warning("Digite algo antes de enviar.")
+
+# Exibir feedbacks anteriores (opcional)
+if st.button("Ver feedbacks recebidos"):
+    try:
+        with open("feedbacks.txt", "r", encoding="utf-8") as f:
+            conteudo = f.read()
+        st.text_area("Feedbacks recebidos:", value=conteudo, height=200)
+    except Exception:
+        st.info("Nenhum feedback recebido ainda.")

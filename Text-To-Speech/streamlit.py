@@ -44,12 +44,16 @@ def montar_contexto_rag():
     if perfil is None:
         return "Contexto indisponível."
     saldo = transacoes[transacoes['tipo']=='entrada']['valor'].sum() - transacoes[transacoes['tipo']=='saida']['valor'].sum()
+    if historico is not None and 'resumo' in historico.columns and not historico['resumo'].empty:
+        historico_resumo = historico['resumo'].iloc[-1]
+    else:
+        historico_resumo = "Nenhum resumo disponível."
     contexto = f"""
     CLIENTE: {perfil['nome']}, {perfil['idade']} anos, {perfil['profissao']}.
     PERFIL: {perfil['perfil_investidor']}. OBJETIVO: {perfil['objetivo_principal']}.
     SALDO ATUAL: R$ {saldo:.2f}.
     METAS: {[m['meta'] for m in perfil['metas']]}
-    HISTÓRICO: {historico['resumo'].iloc[-1]}
+    HISTÓRICO: {historico_resumo}
     PRODUTOS: {[p['nome'] for p in produtos]}
     """
     return contexto

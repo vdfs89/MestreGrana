@@ -15,6 +15,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import requests
 
+# --- Conexão MongoDB Atlas ---
+from pymongo import MongoClient
+
+# Connection string Atlas (agora lida do .env ou st.secrets)
+MONGO_URI = get_secret_or_env("MONGODB_ATLAS_URI")
+if not MONGO_URI:
+    st.error("Erro: MONGODB_ATLAS_URI não encontrada em .env ou st.secrets.")
+    st.stop()
+mongo_client = MongoClient(MONGO_URI)
+mongo_db = mongo_client["mestre_grana_db"]  # Troque para o nome do seu banco
+produtos_collection = mongo_db["produtos_financeiros"]
+
 st.set_page_config(page_title="FinanceForge", page_icon="💸")
 
 
@@ -44,7 +56,12 @@ client_openai = OpenAI(api_key=OPENAI_KEY)
 def ler_dados_financeiros():
     try:
         perfil = json.load(open("data/perfil_investidor.json", "r", encoding='utf-8'))
-        produtos = json.load(open("data/produtos_financeiros.json", "r", encoding='utf-8'))
+        # Busca produtos diretamente do MongoDB Atlas
+        produtos_cursor = produtos_collection.find()
+        produtos = list(produtos_cursor)
+        # Remove o campo '_id' do MongoDB para evitar problemas ao criar DataFrame
+        for p in produtos:
+            p.pop('_id', None)
         transacoes = pd.read_csv("data/transacoes.csv")
         historico = pd.read_csv("data/historico_atendimento.csv")
         return perfil, produtos, transacoes, historico
@@ -127,11 +144,12 @@ def play_audio(text):
 def gerar_audio_groq(texto, voice="autumn", style="excited", api_key=None):
     url = "https://api.canopylabs.com/orpheus/tts"
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    # Voz autumn é uma das mais naturais; style expressive deixa mais fluente
     payload = {
         "text": texto,
-        "voice": voice,
-        "style": style,
-        "language": "en"  # Troque para "pt" se disponível
+        "voice": "autumn",  # Recomendada para voz humana
+        "style": "expressive",  # Mais fluente e natural
+        "language": "pt"  # Se disponível, usa português
     }
     response = requests.post(url, json=payload, headers=headers)
     if response.status_code == 200:
@@ -340,9 +358,18 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
                 play_audio(resposta)
             st.divider()
             st.markdown("**Sugestões para você continuar:**")
-            st.button("Simular aporte mensal para meta de reserva", key="sugestao_aporte")
-            st.button("Ver resumo do mês atual", key="sugestao_resumo")
-            st.button("Consultar produtos recomendados para meu perfil", key="sugestao_produtos")
+            if st.button("Simular aporte mensal para meta de reserva", key="sugestao_aporte"):
+                resposta = "Para simular um aporte mensal, informe o valor desejado e o prazo da sua meta. O sistema irá calcular quanto você precisa investir por mês para atingir seu objetivo."
+                st.markdown(f"**[Sugestão]** {resposta}")
+                play_audio(resposta)
+            if st.button("Ver resumo do mês atual", key="sugestao_resumo"):
+                resposta = "Aqui está o resumo do seu mês: entradas, saídas, saldo final e principais categorias de gastos. Para detalhes, acesse a tabela de transações."
+                st.markdown(f"**[Sugestão]** {resposta}")
+                play_audio(resposta)
+            if st.button("Consultar produtos recomendados para meu perfil", key="sugestao_produtos"):
+                resposta = "Com base no seu perfil, os produtos recomendados são exibidos na tabela abaixo. Avalie as opções e compare rentabilidades, prazos e riscos."
+                st.markdown(f"**[Sugestão]** {resposta}")
+                play_audio(resposta)
 
     # --- Formatação visual para perguntas sobre gastos, metas ou recomendações ---
     if any(p in prompt_lower for p in ["gasto", "despesa", "transacao", "extrato"]):
@@ -350,6 +377,16 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
             df = pd.read_csv("data/transacoes.csv")
             st.subheader("Tabela de Gastos Recentes")
             st.dataframe(df)
+            # Gráfico de barras dos gastos por categoria
+            if "categoria" in df.columns and "valor" in df.columns:
+                gastos_categoria = df[df["tipo"]=="saida"].groupby("categoria")["valor"].sum().sort_values()
+                st.subheader("Distribuição dos Gastos por Categoria")
+                fig, ax = plt.subplots()
+                gastos_categoria.plot(kind="barh", ax=ax, color="#FFB347")
+                ax.set_xlabel("Valor (R$)")
+                ax.set_ylabel("Categoria")
+                ax.set_title("Gastos por Categoria")
+                st.pyplot(fig)
         except Exception:
             st.warning("Não foi possível exibir a tabela de gastos.")
     if "meta" in prompt_lower:

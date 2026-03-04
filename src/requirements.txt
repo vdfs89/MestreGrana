@@ -1,5 +1,6 @@
 matplotlib
 pymongo
+google-genai
 streamlit
 speechrecognition
 streamlit-webrtc

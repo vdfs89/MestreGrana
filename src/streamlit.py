@@ -31,7 +31,7 @@ MONGO_URI = get_secret_or_env("MONGODB_ATLAS_URI")
 if not MONGO_URI:
     st.error("Erro: MONGODB_ATLAS_URI não encontrada em .env ou st.secrets.")
     st.stop()
-mongo_client = MongoClient(MONGO_URI)
+mongo_client = MongoClient(MONGO_URI, tls=True)
 mongo_db = mongo_client["mestre_grana_db"]  # Troque para o nome do seu banco
 produtos_collection = mongo_db["produtos_financeiros"]
 

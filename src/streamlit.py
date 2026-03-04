@@ -1,3 +1,4 @@
+
 import streamlit as st
 import base64
 import pandas as pd
@@ -14,6 +15,13 @@ import streamlit_webrtc as webrtc
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
+
+# Busca as chaves primeiro em st.secrets, depois em variáveis de ambiente
+def get_secret_or_env(key):
+    try:
+        return st.secrets[key]
+    except Exception:
+        return os.environ.get(key)
 
 # --- Conexão MongoDB Atlas ---
 from pymongo import MongoClient

@@ -1,3 +1,5 @@
+# Arquivo de variáveis de ambiente
+.env
 __pycache__/
 .env
 .vscode/

@@ -1,6 +1,9 @@
 streamlit
+speechrecognition
+streamlit-webrtc
 groq
 google-genai
 openai
 gTTS
 pandas
+langdetect

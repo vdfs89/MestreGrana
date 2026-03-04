@@ -1,4 +1,3 @@
-
 data/         # Dados mockados do cliente (João Silva)
 docs/         # Documentação completa (caso de uso, base, prompts, métricas, pitch)
 src/          # Código principal (app.py, agente.py, config.py)
@@ -100,6 +99,25 @@ pip install -r src/requirements.txt
 ```bash
 streamlit run src/app.py
 ```
+
+---
+
+## 📱 Experiência Mobile
+O app é responsivo e otimizado para uso em smartphones e tablets.
+
+## 💬 Histórico de Conversas
+Todas as interações ficam salvas e podem ser exportadas em CSV para acompanhamento.
+
+## 📊 Gráficos Dinâmicos
+Visualize o resumo financeiro do mês em gráficos interativos.
+
+## ⭐ Feedback do Usuário
+Envie sugestões, elogios ou críticas diretamente pelo app.
+
+## 🚀 Como usar
+1. Instale as dependências: `pip install -r src/requirements.txt`
+2. Execute o app: `streamlit run src/streamlit.py`
+3. Preencha o formulário, use o chat de voz e explore os recursos!
 
 ---
 

@@ -8,6 +8,12 @@ from groq import Groq
 import google.genai as genai
 from openai import OpenAI
 from gtts import gTTS
+import speech_recognition as sr
+import tempfile
+import streamlit_webrtc as webrtc
+import matplotlib.pyplot as plt
+import numpy as np
+import requests
 
 st.set_page_config(page_title="FinanceForge", page_icon="💸")
 
@@ -117,9 +123,78 @@ def play_audio(text):
     except Exception:
         st.error("Erro ao gerar áudio.")
 
+# --- Função para gerar áudio usando Orpheus TTS (Groq/Canopy Labs) ---
+def gerar_audio_groq(texto, voice="autumn", style="excited", api_key=None):
+    url = "https://api.canopylabs.com/orpheus/tts"
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    payload = {
+        "text": texto,
+        "voice": voice,
+        "style": style,
+        "language": "en"  # Troque para "pt" se disponível
+    }
+    response = requests.post(url, json=payload, headers=headers)
+    if response.status_code == 200:
+        with open("resposta_groq.mp3", "wb") as f:
+            f.write(response.content)
+        return "resposta_groq.mp3"
+    else:
+        st.error(f"Erro ao gerar áudio Groq: {response.text}")
+        return None
+
 # --- Interface ---
 
 st.title("💸 FinanceForge: Mentor Financeiro Proativo")
+
+st.subheader("Chat de Voz com IA")
+st.info("Clique em 'Start' para ativar o microfone e fale sua pergunta. Quando terminar, clique em 'Stop'. Aguarde a transcrição e resposta.")
+
+webrtc_ctx = webrtc.webrtc_streamer(
+    key="voice-chat",
+    mode=webrtc.WebRtcMode.SENDRECV,
+    audio_receiver_size=256,
+    media_stream_constraints={"audio": True, "video": False},
+    async_processing=True,
+    rtc_configuration={
+        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
+    },
+)
+transcricao = st.empty()
+resposta_box = st.empty()
+if webrtc_ctx.audio_receiver:
+    st.info("🔴 Gravando...")
+    import queue
+    audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
+    if audio_frames:
+        st.info("Processando áudio...")
+        audio = audio_frames[0].to_ndarray()
+        import soundfile as sf
+        import numpy as np
+        tmp_audio_path = "temp_voice.wav"
+        sf.write(tmp_audio_path, audio, 16000)
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(tmp_audio_path) as source:
+            audio_data = recognizer.record(source)
+        try:
+            texto = recognizer.recognize_google(audio_data, language="pt-BR")
+            transcricao.success(f"Transcrição: {texto}")
+        except Exception as e:
+            transcricao.error(f"Não foi possível transcrever o áudio: {e}")
+            texto = ""
+        if texto:
+            st.session_state.messages.append({"role": "user", "content": texto})
+            resposta, provedor = get_ai_response([{"role": "user", "content": texto}])
+            resposta_box.success(f"Resposta ({provedor}): {resposta}")
+            # No bloco de resposta em áudio
+            api_key_groq = get_secret_or_env("GROQ_TTS_API_KEY")
+            audio_path = gerar_audio_groq(resposta, voice="autumn", style="excited", api_key=api_key_groq)
+            if audio_path:
+                with open(audio_path, "rb") as f:
+                    data = f.read()
+                    b64 = base64.b64encode(data).decode()
+                    st.markdown(f'<audio controls src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
+            else:
+                st.warning("Erro ao gerar áudio da resposta.")
 
 # --- Resumo mensal automático ao abrir o app ---
 if 'show_form' not in st.session_state:
@@ -238,7 +313,10 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
 
     # --- Validação de perguntas fora do escopo e idioma ---
     prompt_lower = prompt.lower()
-    escopo_financeiro = ["gasto", "despesa", "transacao", "extrato", "meta", "investimento", "recomendacao", "produto", "saldo", "renda", "reserva", "cdb", "tesouro", "lci", "lca", "fundo"]
+    escopo_financeiro = [
+        "gasto", "despesa", "transacao", "extrato", "meta", "investimento", "recomendacao", "produto", "saldo", "renda", "reserva", "cdb", "tesouro", "lci", "lca", "fundo",
+        "levantar dinheiro", "poupar", "economizar", "guardar", "renda extra", "ganhar dinheiro", "CDI", "como investir", "dinheiro para investir", "educação financeira", "planejamento financeiro"
+    ]
     # Verifica se está em português ou inglês
     import langdetect
     try:
@@ -249,21 +327,22 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
     if not idioma_valido:
         st.warning("O agente só responde perguntas em português ou inglês.")
     elif not any(p in prompt_lower for p in escopo_financeiro):
-        st.warning("Pergunta fora do escopo financeiro! O agente só responde sobre finanças pessoais, investimentos, metas e produtos financeiros.")
-    else:
-        with st.spinner("Consultando mentor financeiro..."):
-            resposta, provider = get_ai_response(st.session_state.messages)
-        with st.chat_message("assistant"):
-            st.markdown(f"**[{provider}]** {resposta}")
-            st.session_state.messages.append({"role": "assistant", "content": resposta})
-            play_audio(resposta)
-
-        # Sugestões proativas após cada resposta
-        st.divider()
-        st.markdown("**Sugestões para você continuar:**")
-        st.button("Simular aporte mensal para meta de reserva", key="sugestao_aporte")
-        st.button("Ver resumo do mês atual", key="sugestao_resumo")
-        st.button("Consultar produtos recomendados para meu perfil", key="sugestao_produtos")
+        # Novo filtro: aceita se qualquer palavra do escopo aparecer na pergunta
+        palavras = prompt_lower.split()
+        if not any(any(p in palavra for p in escopo_financeiro) for palavra in palavras):
+            st.warning("Pergunta fora do escopo financeiro! O agente só responde sobre finanças pessoais, investimentos, metas e produtos financeiros.")
+        else:
+            with st.spinner("Consultando mentor financeiro..."):
+                resposta, provider = get_ai_response(st.session_state.messages)
+            with st.chat_message("assistant"):
+                st.markdown(f"**[{provider}]** {resposta}")
+                st.session_state.messages.append({"role": "assistant", "content": resposta})
+                play_audio(resposta)
+            st.divider()
+            st.markdown("**Sugestões para você continuar:**")
+            st.button("Simular aporte mensal para meta de reserva", key="sugestao_aporte")
+            st.button("Ver resumo do mês atual", key="sugestao_resumo")
+            st.button("Consultar produtos recomendados para meu perfil", key="sugestao_produtos")
 
     # --- Formatação visual para perguntas sobre gastos, metas ou recomendações ---
     if any(p in prompt_lower for p in ["gasto", "despesa", "transacao", "extrato"]):
@@ -292,16 +371,61 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
         except Exception:
             st.warning("Não foi possível exibir a tabela de produtos.")
 
+    # Resposta padrão para perguntas sobre CDI
+    if "cdi" in prompt_lower:
+        resposta = (
+            "CDI significa Certificado de Depósito Interbancário. São títulos emitidos por bancos para financiar suas operações diárias entre si, com duração de um dia útil. Para o investidor, o CDI é o principal benchmark de renda fixa, indicando o rendimento de produtos como CDBs, LCIs e LCAs, geralmente acompanhando de perto a taxa Selic.\n\n"
+            "Pontos-chave sobre o CDI:\n"
+            "- Finalidade: Os bancos usam o CDI para equilibrar o caixa no final do dia, garantindo que o saldo não fique negativo.\n"
+            "- Rendimento: Um investimento de '100% do CDI' significa que ele rende exatamente a taxa CDI, que tende a superar a poupança.\n"
+            "- Influência da Selic: O CDI caminha junto com a taxa Selic; se a Selic sobe, o CDI sobe, aumentando a rentabilidade da renda fixa.\n"
+            "- Exemplos de Investimentos: CDBs, LCIs, LCAs e contas de pagamento (como Nubank, Banco Inter).\n\n"
+            "O CDI é fundamental para entender o retorno de aplicações de baixo risco, servindo como uma base para comparar se um investimento está valendo a pena."
+        )
+        provider = "Resposta padrão"
+        with st.chat_message("assistant"):
+            st.markdown(f"**[{provider}]** {resposta}")
+            st.session_state.messages.append({"role": "assistant", "content": resposta})
+            play_audio(resposta)
+        st.divider()
+        st.markdown("**Sugestões para você continuar:**")
+    else:
+        with st.spinner("Consultando mentor financeiro..."):
+            resposta, provider = get_ai_response(st.session_state.messages)
+        with st.chat_message("assistant"):
+            st.markdown(f"**[{provider}]** {resposta}")
+            st.session_state.messages.append({"role": "assistant", "content": resposta})
+            play_audio(resposta)
+        st.divider()
+        st.markdown("**Sugestões para você continuar:**")
+        st.button("Simular aporte mensal para meta de reserva", key="sugestao_aporte")
+        st.button("Ver resumo do mês atual", key="sugestao_resumo")
+        st.button("Consultar produtos recomendados para meu perfil", key="sugestao_produtos")
 
-def gerar_modelo_csv_50_30_20(receita=0.0, despesas=0.0, saldo=0.0, mes_ano=""): 
-    import io
-    modelo_csv = io.StringIO()
-    modelo_csv.write(f"Resumo do Mês:,{mes_ano}\nReceita Total Esperada:,R$ {receita:.2f}\nReceita Total Realizada:,R$ {receita:.2f}\nSaldo Final (Receita - Gastos):,R$ {saldo:.2f}\n\n")
-    modelo_csv.write("Receitas (O que entra)\nItem,Planejado (R$),Realizado (R$)\nSalário Líquido,,\nRenda Extra / Freela,,\nOutros (Dividendos/Restituição),,\nTotal Receitas,R$ 0,00,R$ 0,00\n\n")
-    modelo_csv.write("Gastos Fixos - Necessidades (Meta: 50%)\nDescrição,Valor (R$),Vencimento,Status (PAGO?)\nAluguel/Financiamento,,,[]\nCondomínio / IPTU,,,[]\nEnergia / Água / Gás,,,[]\nInternet / Celular,,,[]\nSupermercado (Essencial),,,[]\nPlano de Saúde / Medicamentos,,,[]\nEducação / Escola,,,[]\n\n")
-    modelo_csv.write("Gastos Variáveis - Estilo de Vida (Meta: 30%)\nDescrição,Valor (R$),Categoria\nStreaming (Netflix/Spotify),,Lazer\nDelivery / Restaurantes,,Lazer\nTransporte (Apps/Combustível),,Rotina\nCompras / Hobbies,,Desejo\nSalão / Estética,,Pessoal\n\n")
-    modelo_csv.write("Futuro - Dívidas e Investimentos (Meta: 20%)\nDescrição,Valor (R$),Objetivo\nPagamento de Dívidas,,Quitação\nReserva de Emergência,,Segurança\nAporte em Investimentos,,Aposentadoria/Bens\n\n")
-    modelo_csv.write("Controle de Cartão de Crédito\nVencimento:,\nValor da Fatura:,R$\n\n")
-    modelo_csv.write("Próximos Passos Sugeridos:\nLevantamento: Olhe seu extrato bancário dos últimos 30 dias para preencher a coluna 'Realizado'.\nAjuste: Se a soma das 'Necessidades' passar de 50%, veja o que pode ser cortado no 'Estilo de Vida'.\nHábito: Reserve 10 minutos por semana para atualizar esses valores.\n")
-    modelo_csv.seek(0)
-    return modelo_csv.getvalue()
+
+# --- Histórico de conversas ---
+st.subheader("Histórico de Conversas")
+if "chat_history" not in st.session_state:
+    st.session_state["chat_history"] = []
+for msg in st.session_state.messages:
+    if msg["role"] != "system":
+        st.session_state["chat_history"].append(msg)
+if st.session_state["chat_history"]:
+    for i, msg in enumerate(st.session_state["chat_history"]):
+        st.markdown(f"**{msg['role'].capitalize()}:** {msg['content']}")
+    if st.button("Exportar histórico (CSV)"):
+        import pandas as pd
+        df_hist = pd.DataFrame(st.session_state["chat_history"])
+        st.download_button("Baixar histórico CSV", df_hist.to_csv(index=False), "historico_chat.csv", mime="text/csv")
+
+
+# Feedback do usuário
+st.subheader("Deixe seu feedback!")
+feedback = st.text_area("O que achou do app? Sugestões, elogios ou críticas:")
+if st.button("Enviar feedback"):
+    if feedback:
+        with open("feedbacks.txt", "a", encoding="utf-8") as f:
+            f.write(feedback + "\n---\n")
+        st.success("Obrigado pelo seu feedback!")
+    else:
+        st.warning("Digite algo antes de enviar.")

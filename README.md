@@ -31,11 +31,31 @@ O Edu é um educador financeiro que ensina, não recomenda. Ele explica conceito
 
 ## 🏗️ Arquitetura
 
+
 **Stack:**
 
 - Interface: Streamlit
 - LLM: Groq, Gemini, OpenAI (failover multi-LLM)
-- Dados: JSON/CSV mockados
+- Banco de dados: MongoDB Atlas (cloud, gratuito)
+- Dados: JSON/CSV mockados (apenas para testes)
+
+---
+
+## ☁️ MongoDB Atlas
+
+O projeto utiliza MongoDB Atlas como banco de dados principal, hospedado na nuvem (DBaaS). Os dados de produtos financeiros são lidos diretamente do cluster Atlas, permitindo integração com IA, buscas semânticas e escalabilidade.
+
+### Como configurar o MongoDB Atlas:
+1. Crie uma conta gratuita em https://www.mongodb.com/atlas/database
+2. Crie um cluster (M0 Free Tier)
+3. Crie um usuário de banco e configure o IP de acesso
+4. Copie a string de conexão (exemplo):
+	`mongodb+srv://usuario:senha@cluster0.mongodb.net/`
+5. Adicione a string ao arquivo `.env`:
+	`MONGODB_ATLAS_URI=mongodb+srv://usuario:senha@cluster0.mongodb.net/`
+6. O app já está pronto para ler os dados do Atlas!
+
+---
 
 ---
 
@@ -74,10 +94,33 @@ Este repositório reúne múltiplos módulos do bootcamp Bradesco - GenAI & Dado
 ├── tests/        # Testes automatizados
 │   └── test_calculadora_exportacao.py
 │
-├── E-CARDS/      # Módulo SQL do bootcamp (projeto de banco de dados)
-│   ├── assets/
-│   ├── db_scripts/
-│   ├── prompts/
+
+---
+
+## 🚀 Exemplos de Uso
+
+### Executando o app
+
+```bash
+streamlit run src/streamlit.py
+```
+
+### Exemplos de perguntas para o assistente:
+
+- "Como funciona a reserva de emergência?"
+- "Quais produtos de renda fixa são recomendados para meu perfil?"
+- "Me mostre meus gastos por categoria este mês."
+- "O que é CDI?"
+- "Simule um aporte mensal de R$ 500 para meta de viagem."
+
+### Recursos interativos:
+- Chat de voz (pergunte e ouça a resposta)
+- Gráficos dinâmicos de gastos
+- Exportação do histórico de conversas
+- Feedback do usuário
+- Integração com MongoDB Atlas para dados reais
+
+---
 │   └── readme.md
 │
 ├── assets/       # Imagens e diagramas (opcional)

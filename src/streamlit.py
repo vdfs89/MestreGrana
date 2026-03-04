@@ -5,24 +5,32 @@ import json
 import sys
 import os
 from groq import Groq
-import google.generativeai as genai
+import google.genai as genai
 from openai import OpenAI
 from gtts import gTTS
 
 st.set_page_config(page_title="FinanceForge", page_icon="💸")
 
-try:
-    GROQ_KEY = st.secrets["GROQ_API_KEY"]
-    GEMINI_KEY = st.secrets["GEMINI_API_KEY"]
-    OPENAI_KEY = st.secrets["OPENAI_API_KEY"]
-except KeyError as e:
-    st.error(f"Erro: Chave {e} não encontrada no st.secrets. Verifique as configurações.")
+
+# Busca as chaves primeiro em st.secrets, depois em variáveis de ambiente
+def get_secret_or_env(key):
+    try:
+        return st.secrets[key]
+    except Exception:
+        return os.environ.get(key)
+
+GROQ_KEY = get_secret_or_env("GROQ_API_KEY")
+GEMINI_KEY = get_secret_or_env("GEMINI_API_KEY")
+OPENAI_KEY = get_secret_or_env("OPENAI_API_KEY")
+
+if not GROQ_KEY or not GEMINI_KEY or not OPENAI_KEY:
+    st.error("Erro: Uma ou mais chaves de API não foram encontradas em st.secrets ou no ambiente (.env). Verifique as configurações.")
     st.stop()
 
 
 # --- Inicialização dos Clientes ---
 client_groq = Groq(api_key=GROQ_KEY)
-genai.configure(api_key=GEMINI_KEY)
+genai.API_KEY = GEMINI_KEY
 client_openai = OpenAI(api_key=OPENAI_KEY)
 
 
@@ -114,17 +122,80 @@ def play_audio(text):
 st.title("💸 FinanceForge: Mentor Financeiro Proativo")
 
 # --- Resumo mensal automático ao abrir o app ---
-try:
-    transacoes = pd.read_csv("data/transacoes.csv")
-    entradas = transacoes[transacoes['tipo'] == 'entrada']['valor'].sum()
-    saidas = transacoes[transacoes['tipo'] == 'saida']['valor'].sum()
-    saldo = entradas - saidas
-    st.info(f"Resumo do mês:")
-    st.write(f"Receita: R$ {entradas:.2f}")
-    st.write(f"Despesas: R$ {saidas:.2f}")
-    st.write(f"Saldo: R$ {saldo:.2f}")
-except Exception:
-    st.warning("Não foi possível calcular o resumo mensal.")
+if 'show_form' not in st.session_state:
+    st.session_state['show_form'] = False
+
+if st.button("Informar receita e despesas do mês"):
+    st.session_state['show_form'] = True
+
+if st.session_state['show_form']:
+    with st.form("form_resumo_mes"):
+        st.subheader("1. Resumo do Mês")
+        mes_ano = st.text_input("Mês/Ano", value="03/2026")
+        receita_esperada = st.number_input("Receita Total Esperada (R$)", min_value=0.0, format="%.2f")
+        receita_realizada = st.number_input("Receita Total Realizada (R$)", min_value=0.0, format="%.2f")
+        despesas = st.number_input("Despesas Totais (R$)", min_value=0.0, format="%.2f")
+        saldo = receita_realizada - despesas
+
+        st.subheader("2. Receitas (O que entra)")
+        salario = st.number_input("Salário Líquido (R$)", min_value=0.0, format="%.2f")
+        renda_extra = st.number_input("Renda Extra / Freela (R$)", min_value=0.0, format="%.2f")
+        outros_receita = st.number_input("Outros (Dividendos/Restituição) (R$)", min_value=0.0, format="%.2f")
+        total_receitas = salario + renda_extra + outros_receita
+
+        st.subheader("3. Gastos Fixos - Necessidades (Meta: 50%)")
+        aluguel = st.number_input("Aluguel/Financiamento (R$)", min_value=0.0, format="%.2f")
+        condominio = st.number_input("Condomínio / IPTU (R$)", min_value=0.0, format="%.2f")
+        energia = st.number_input("Energia / Água / Gás (R$)", min_value=0.0, format="%.2f")
+        internet = st.number_input("Internet / Celular (R$)", min_value=0.0, format="%.2f")
+        supermercado = st.number_input("Supermercado (Essencial) (R$)", min_value=0.0, format="%.2f")
+        saude = st.number_input("Plano de Saúde / Medicamentos (R$)", min_value=0.0, format="%.2f")
+        educacao = st.number_input("Educação / Escola (R$)", min_value=0.0, format="%.2f")
+        total_fixos = aluguel + condominio + energia + internet + supermercado + saude + educacao
+
+        st.subheader("4. Gastos Variáveis - Estilo de Vida (Meta: 30%)")
+        streaming = st.number_input("Streaming (Netflix/Spotify) (R$)", min_value=0.0, format="%.2f")
+        delivery = st.number_input("Delivery / Restaurantes (R$)", min_value=0.0, format="%.2f")
+        transporte = st.number_input("Transporte (Apps/Combustível) (R$)", min_value=0.0, format="%.2f")
+        hobbies = st.number_input("Compras / Hobbies (R$)", min_value=0.0, format="%.2f")
+        estetica = st.number_input("Salão / Estética (R$)", min_value=0.0, format="%.2f")
+        total_variaveis = streaming + delivery + transporte + hobbies + estetica
+
+        st.subheader("5. Futuro - Dívidas e Investimentos (Meta: 20%)")
+        dividas = st.number_input("Pagamento de Dívidas (R$)", min_value=0.0, format="%.2f")
+        reserva = st.number_input("Reserva de Emergência (R$)", min_value=0.0, format="%.2f")
+        investimentos = st.number_input("Aporte em Investimentos (R$)", min_value=0.0, format="%.2f")
+        total_futuro = dividas + reserva + investimentos
+
+        st.subheader("6. Controle de Cartão de Crédito")
+        vencimento_cartao = st.text_input("Vencimento do Cartão")
+        valor_fatura = st.number_input("Valor da Fatura (R$)", min_value=0.0, format="%.2f")
+
+        submitted = st.form_submit_button("Calcular e baixar modelo")
+
+    if submitted:
+        st.info(f"Resumo do mês: {mes_ano}")
+        st.write(f"Receita Esperada: R$ {receita_esperada:.2f}")
+        st.write(f"Receita Realizada: R$ {receita_realizada:.2f}")
+        st.write(f"Despesas Totais: R$ {despesas:.2f}")
+        st.write(f"Saldo Final: R$ {saldo:.2f}")
+        st.write(f"Total Receitas: R$ {total_receitas:.2f}")
+        st.write(f"Total Gastos Fixos: R$ {total_fixos:.2f}")
+        st.write(f"Total Gastos Variáveis: R$ {total_variaveis:.2f}")
+        st.write(f"Total Futuro: R$ {total_futuro:.2f}")
+        st.write(f"Valor Fatura Cartão: R$ {valor_fatura:.2f}")
+        csv_modelo = gerar_modelo_csv_50_30_20(
+            receita=receita_esperada,
+            despesas=despesas,
+            saldo=saldo,
+            mes_ano=mes_ano
+        )
+        st.download_button(
+            label="Baixar modelo preenchido (.csv)",
+            data=csv_modelo,
+            file_name="resumo_50-30-20.csv",
+            mime="text/csv"
+        )
 
 
 # --- Atualização dinâmica do contexto RAG ---
@@ -220,3 +291,17 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
             st.dataframe(produtos_df)
         except Exception:
             st.warning("Não foi possível exibir a tabela de produtos.")
+
+
+def gerar_modelo_csv_50_30_20(receita=0.0, despesas=0.0, saldo=0.0, mes_ano=""): 
+    import io
+    modelo_csv = io.StringIO()
+    modelo_csv.write(f"Resumo do Mês:,{mes_ano}\nReceita Total Esperada:,R$ {receita:.2f}\nReceita Total Realizada:,R$ {receita:.2f}\nSaldo Final (Receita - Gastos):,R$ {saldo:.2f}\n\n")
+    modelo_csv.write("Receitas (O que entra)\nItem,Planejado (R$),Realizado (R$)\nSalário Líquido,,\nRenda Extra / Freela,,\nOutros (Dividendos/Restituição),,\nTotal Receitas,R$ 0,00,R$ 0,00\n\n")
+    modelo_csv.write("Gastos Fixos - Necessidades (Meta: 50%)\nDescrição,Valor (R$),Vencimento,Status (PAGO?)\nAluguel/Financiamento,,,[]\nCondomínio / IPTU,,,[]\nEnergia / Água / Gás,,,[]\nInternet / Celular,,,[]\nSupermercado (Essencial),,,[]\nPlano de Saúde / Medicamentos,,,[]\nEducação / Escola,,,[]\n\n")
+    modelo_csv.write("Gastos Variáveis - Estilo de Vida (Meta: 30%)\nDescrição,Valor (R$),Categoria\nStreaming (Netflix/Spotify),,Lazer\nDelivery / Restaurantes,,Lazer\nTransporte (Apps/Combustível),,Rotina\nCompras / Hobbies,,Desejo\nSalão / Estética,,Pessoal\n\n")
+    modelo_csv.write("Futuro - Dívidas e Investimentos (Meta: 20%)\nDescrição,Valor (R$),Objetivo\nPagamento de Dívidas,,Quitação\nReserva de Emergência,,Segurança\nAporte em Investimentos,,Aposentadoria/Bens\n\n")
+    modelo_csv.write("Controle de Cartão de Crédito\nVencimento:,\nValor da Fatura:,R$\n\n")
+    modelo_csv.write("Próximos Passos Sugeridos:\nLevantamento: Olhe seu extrato bancário dos últimos 30 dias para preencher a coluna 'Realizado'.\nAjuste: Se a soma das 'Necessidades' passar de 50%, veja o que pode ser cortado no 'Estilo de Vida'.\nHábito: Reserve 10 minutos por semana para atualizar esses valores.\n")
+    modelo_csv.seek(0)
+    return modelo_csv.getvalue()

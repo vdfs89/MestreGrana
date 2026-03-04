@@ -164,19 +164,28 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.write(prompt)
-    with st.spinner("Consultando mentor financeiro..."):
-        resposta, provider = get_ai_response(st.session_state.messages)
 
-    # --- Validação de perguntas fora do escopo ---
+    # --- Validação de perguntas fora do escopo e idioma ---
     prompt_lower = prompt.lower()
     escopo_financeiro = ["gasto", "despesa", "transacao", "extrato", "meta", "investimento", "recomendacao", "produto", "saldo", "renda", "reserva", "cdb", "tesouro", "lci", "lca", "fundo"]
-    if not any(p in prompt_lower for p in escopo_financeiro):
+    # Verifica se está em português ou inglês
+    import langdetect
+    try:
+        idioma = langdetect.detect(prompt)
+    except Exception:
+        idioma = "unknown"
+    idioma_valido = idioma in ["pt", "en"]
+    if not idioma_valido:
+        st.warning("O agente só responde perguntas em português ou inglês.")
+    elif not any(p in prompt_lower for p in escopo_financeiro):
         st.warning("Pergunta fora do escopo financeiro! O agente só responde sobre finanças pessoais, investimentos, metas e produtos financeiros.")
-
-    with st.chat_message("assistant"):
-        st.markdown(f"**[{provider}]** {resposta}")
-        st.session_state.messages.append({"role": "assistant", "content": resposta})
-        play_audio(resposta)
+    else:
+        with st.spinner("Consultando mentor financeiro..."):
+            resposta, provider = get_ai_response(st.session_state.messages)
+        with st.chat_message("assistant"):
+            st.markdown(f"**[{provider}]** {resposta}")
+            st.session_state.messages.append({"role": "assistant", "content": resposta})
+            play_audio(resposta)
 
         # Sugestões proativas após cada resposta
         st.divider()

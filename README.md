@@ -11,17 +11,20 @@ Agente de IA Generativa que ensina conceitos de finanças pessoais de forma simp
 
 ---
 
-## 💡 O Que é o Edu?
-O Edu é um educador financeiro que ensina, não recomenda. Ele explica conceitos como reserva de emergência, tipos de investimentos e análise de gastos usando uma abordagem didática e exemplos concretos baseados no perfil do cliente.
 
-### O que o Edu faz:
+## 💡 O Que é o MestreGrana?
+O MestreGrana é um educador financeiro que ensina, não recomenda. Ele explica conceitos como reserva de emergência, tipos de investimentos e análise de gastos usando uma abordagem didática e exemplos concretos baseados no perfil do cliente.
+
+
+### O que o MestreGrana faz:
 
 ✅ Explica conceitos financeiros de forma simples
 ✅ Usa dados do cliente como exemplos práticos
 ✅ Responde dúvidas sobre produtos financeiros
 ✅ Analisa padrões de gastos de forma educativa
 
-### O que o Edu NÃO faz:
+
+### O que o MestreGrana NÃO faz:
 
 ❌ Não recomenda investimentos específicos
 ❌ Não acessa dados bancários sensíveis
@@ -50,9 +53,10 @@ O projeto utiliza MongoDB Atlas como banco de dados principal, hospedado na nuve
 2. Crie um cluster (M0 Free Tier)
 3. Crie um usuário de banco e configure o IP de acesso
 4. Copie a string de conexão (exemplo):
-	`mongodb+srv://usuario:senha@cluster0.mongodb.net/`
+	`mongodb+srv://<usuario>:<senha>@<cluster>.mongodb.net/`
+\n**Nunca exponha credenciais reais em arquivos públicos ou README!**
 5. Adicione a string ao arquivo `.env`:
-	`MONGODB_ATLAS_URI=mongodb+srv://usuario:senha@cluster0.mongodb.net/`
+	`MONGODB_ATLAS_URI=mongodb+srv://<usuario>:<senha>@<cluster>.mongodb.net/`
 6. O app já está pronto para ler os dados do Atlas!
 
 ---
@@ -138,9 +142,10 @@ Cada pasta contém arquivos autoexplicativos para facilitar o estudo e navegaç�
 ```bash
 pip install -r src/requirements.txt
 ```
-2. Rodar o Edu
+
+2. Rodar o MestreGrana
 ```bash
-streamlit run src/app.py
+streamlit run src/streamlit.py
 ```
 
 ---
@@ -164,13 +169,14 @@ Envie sugestões, elogios ou críticas diretamente pelo app.
 
 ---
 
+
 ## 🎯 Exemplo de Uso
 
 Pergunta: "O que é CDI?"
-Edu: "CDI é uma taxa de referência usada pelos bancos. Quando um investimento rende '100% do CDI', significa que ele acompanha essa taxa. Hoje o CDI está próximo da Selic. Quer que eu explique a diferença entre os dois?"
+MestreGrana: "CDI é uma taxa de referência usada pelos bancos. Quando um investimento rende '100% do CDI', significa que ele acompanha essa taxa. Hoje o CDI está próximo da Selic. Quer que eu explique a diferença entre os dois?"
 
 Pergunta: "Onde estou gastando mais?"
-Edu: "Olhando suas transações de outubro, sua maior despesa é moradia (R$ 1.380), seguida de alimentação (R$ 570). Juntas, representam quase 80% dos seus gastos. Isso é bem comum! Quer que eu explique algumas estratégias de organização?"
+MestreGrana: "Olhando suas transações de outubro, sua maior despesa é moradia (R$ 1.380), seguida de alimentação (R$ 570). Juntas, representam quase 80% dos seus gastos. Isso é bem comum! Quer que eu explique algumas estratégias de organização?"
 
 ---
 

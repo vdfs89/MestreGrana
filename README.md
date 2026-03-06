@@ -154,6 +154,9 @@ O MestreGrana foi projetado para ser agnóstico a bancos de dados, permitindo a 
 
 Na evolução do projeto, está prevista a integração com bancos de dados orientados a grafos (ex: Neo4j), permitindo análises avançadas de relacionamentos entre produtos, clientes e transações. Isso abrirá espaço para recomendações personalizadas, detecção de fraudes e visualização de redes financeiras.
 
+## 🚧 Próxima Versão
+O projeto prevê a reativação da integração com MongoDB Atlas para persistência cloud, histórico de usuários, feedbacks e dados dinâmicos. A configuração e troubleshooting estarão documentados para facilitar o deploy em ambientes de produção e nuvem.
+
 ---
 ## 🚀 Pitch de Negócios
 O MestreGrana é uma solução de IA para educação financeira, pensada para escalar em ambientes corporativos, bootcamps e consultorias. Com arquitetura robusta, integração cloud e foco em personalização, ele prepara o usuário para decisões financeiras seguras e autônomas, elevando o padrão de atendimento digital.

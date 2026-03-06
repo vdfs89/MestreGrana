@@ -23,32 +23,9 @@ def get_secret_or_env(key):
     except Exception:
         return os.environ.get(key)
 
-# --- Conexão MongoDB Atlas ---
-from pymongo import MongoClient
 
-# Connection string Atlas (agora lida do .env ou st.secrets)
-MONGO_URI = get_secret_or_env("MONGODB_ATLAS_URI")
-if not MONGO_URI:
-    st.error("Erro: MONGODB_ATLAS_URI não encontrada em .env ou st.secrets.")
-    st.stop()
-atlas_status = "🟢 Online"
-llm_status = "🟢 Online"
-try:
-    with st.spinner("Conectando ao MongoDB Atlas..."):
-        mongo_client = MongoClient(MONGO_URI, tls=True)
-        mongo_db = mongo_client["InvestimentoDIO"]
-        mongo_db.command("ping")
-        produtos_collection = mongo_db["produtos"]
-        usuarios_collection = mongo_db["usuarios"]
-        transacoes_collection = mongo_db["transacoes"]
-        feedbacks_collection = mongo_db["feedbacks"]
-        historico_collection = mongo_db["historico"]
-except Exception as e:
-    atlas_status = "🔴 Offline"
-    st.error("Erro de autenticação no MongoDB Atlas. Verifique usuário, senha, permissões e IP liberado no painel Atlas. Detalhes: " + str(e))
-    st.stop()
-st.sidebar.markdown(f"**Status Atlas:** {atlas_status}")
-st.sidebar.markdown(f"**Status LLM:** {llm_status}")
+st.sidebar.markdown("**Status Atlas:** Removido")
+st.sidebar.markdown("**Status LLM:** 🟢 Online")
 
 
 st.set_page_config(page_title="FinanceForge", page_icon="💸")

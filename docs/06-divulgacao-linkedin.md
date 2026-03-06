@@ -16,6 +16,6 @@ Apresento o FinanceForge, um agente financeiro consultivo que utiliza IA generat
 
 Confira o repositório, documentação e demo:
 👉 https://github.com/vdfs89/InvestimentoDIO
-👉 https://engtutor.streamlit.app/
+👉 https://mestregrana.streamlit.app/
 
 #SantanderDIO #FinanceForge #IA #Streamlit #EngenhariaDePrompt #Bootcamp #MentoriaFinanceira #OpenAI #Groq #Gemini #RAG #Python

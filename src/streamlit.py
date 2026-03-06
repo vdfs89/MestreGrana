@@ -32,8 +32,12 @@ if not MONGO_URI:
     st.error("Erro: MONGODB_ATLAS_URI não encontrada em .env ou st.secrets.")
     st.stop()
 mongo_client = MongoClient(MONGO_URI, tls=True)
-mongo_db = mongo_client["mestre_grana_db"]  # Troque para o nome do seu banco
-produtos_collection = mongo_db["produtos_financeiros"]
+mongo_db = mongo_client["InvestimentoDIO"]
+produtos_collection = mongo_db["produtos"]
+usuarios_collection = mongo_db["usuarios"]
+transacoes_collection = mongo_db["transacoes"]
+feedbacks_collection = mongo_db["feedbacks"]
+historico_collection = mongo_db["historico"]
 
 
 st.set_page_config(page_title="FinanceForge", page_icon="💸")
@@ -79,8 +83,99 @@ def ler_dados_financeiros():
         st.error(f"Erro ao ler dados financeiros: {e}")
         return None, None, None, None
 
+# --- DASHBOARD ANALÍTICO ---
+def mostrar_dashboard():
+    st.title("📊 Dashboard Financeiro Avançado")
+    perfil, produtos, transacoes, historico = ler_dados_financeiros()
+    if perfil is None:
+        st.warning("Dados não disponíveis para o dashboard.")
+        return
+
+    # KPIs principais
+    saldo_total = perfil.get("saldo", 0)
+    total_investido = sum([m.get("valor", 0) for m in perfil.get("metas", [])])
+    total_produtos = len(produtos) if produtos else 0
+    total_transacoes = len(transacoes) if transacoes is not None else 0
+
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Saldo Atual", f"R$ {saldo_total:,.2f}")
+    col2.metric("Total Investido (Metas)", f"R$ {total_investido:,.2f}")
+    col3.metric("Produtos Financeiros", total_produtos)
+    col4.metric("Transações", total_transacoes)
+
+    st.markdown("---")
+
+    # Gráfico de evolução do saldo
+    if historico is not None and "data" in historico.columns and "saldo" in historico.columns:
+        st.subheader("Evolução do Saldo")
+        fig, ax = plt.subplots()
+        historico.plot(x="data", y="saldo", ax=ax, marker="o", color="#4F8A10")
+        ax.set_ylabel("Saldo (R$)")
+        ax.set_xlabel("Data")
+        st.pyplot(fig)
+
+    # Gráfico de distribuição de gastos
+    if transacoes is not None and "categoria" in transacoes.columns and "valor" in transacoes.columns:
+        st.subheader("Gastos por Categoria")
+        gastos_categoria = transacoes[transacoes["tipo"]=="saida"].groupby("categoria")["valor"].sum().sort_values()
+        fig2, ax2 = plt.subplots()
+        gastos_categoria.plot(kind="barh", ax=ax2, color="#FFB347")
+        ax2.set_xlabel("Valor (R$)")
+        ax2.set_ylabel("Categoria")
+        st.pyplot(fig2)
+
+    # Filtro de produtos financeiros
+    if produtos:
+        st.subheader("Catálogo de Produtos Financeiros")
+        filtro_tipo = st.selectbox("Filtrar por tipo", ["Todos"] + sorted(set([p.get("tipo", "") for p in produtos])))
+        if filtro_tipo != "Todos":
+            produtos_filtrados = [p for p in produtos if p.get("tipo", "") == filtro_tipo]
+        else:
+            produtos_filtrados = produtos
+        st.dataframe(pd.DataFrame(produtos_filtrados))
+
+    st.markdown("---")
+    st.info("Dashboard alimentado em tempo real pelo MongoDB Atlas e dados locais. KPIs, gráficos e filtros para análise financeira completa.")
+# --- Exibição do dashboard na barra lateral ---
+with st.sidebar:
+    st.header("Navegação")
+    pagina = st.radio("Escolha a página:", ["Assistente", "Dashboard"])
+
+if pagina == "Dashboard":
+    mostrar_dashboard()
+
 # --- Função para montar contexto RAG ---
 def montar_contexto_rag():
+    import requests
+
+    # --- Login simples ---
+    st.header("Login rápido")
+    with st.form("login_form"):
+        nome = st.text_input("Nome")
+        email = st.text_input("Email")
+        submit = st.form_submit_button("Entrar")
+        if submit and nome and email:
+            try:
+                ip = requests.get("https://api.ipify.org").text
+                # Verifica duplicidade de email ou IP
+                usuario_existente = usuarios_collection.find_one({"$or": [{"email": email}, {"ip": ip}]})
+                if usuario_existente:
+                    st.warning("Usuário já cadastrado com este email ou IP. Seu histórico será carregado.")
+                else:
+                    usuarios_collection.insert_one({"nome": nome, "email": email, "ip": ip, "data": pd.Timestamp.now()})
+                    st.success(f"Bem-vindo, {nome}! Seu acesso foi registrado.")
+                # Salva histórico de login
+                historico_collection.insert_one({"usuario": nome, "email": email, "acao": "login", "ip": ip, "data": pd.Timestamp.now()})
+                # Carrega histórico do usuário
+                historico_usuario = list(historico_collection.find({"usuario": nome, "email": email}).sort("data", -1))
+                if historico_usuario:
+                    st.info("Seu histórico de acessos:")
+                    for h in historico_usuario:
+                        st.write(f"{h['acao']} em {h['data']:%d/%m/%Y %H:%M} - IP: {h.get('ip','-')}")
+                else:
+                    st.info("Nenhum histórico encontrado.")
+            except Exception as e:
+                st.error(f"Erro ao registrar login: {e}")
     perfil, produtos, transacoes, historico = ler_dados_financeiros()
     if perfil is None:
         return "Contexto indisponível."
@@ -173,6 +268,9 @@ def gerar_audio_groq(texto, voice="autumn", style="excited", api_key=None):
 # --- Interface ---
 
 st.title("💸 FinanceForge: Mentor Financeiro Proativo")
+# Inicializa o histórico de mensagens para evitar erro
+if "messages" not in st.session_state:
+    st.session_state["messages"] = []
 
 st.subheader("Chat de Voz com IA")
 st.info("Clique em 'Start' para ativar o microfone e fale sua pergunta. Quando terminar, clique em 'Stop'. Aguarde a transcrição e resposta.")

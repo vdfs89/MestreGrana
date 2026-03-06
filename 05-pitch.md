@@ -1,0 +1,3 @@
+## 🚀 Pitch de Negócios
+
+O MestreGrana é uma solução de IA para educação financeira, desenhada para escalar em ambientes corporativos, bootcamps e consultorias. Com arquitetura robusta, integração cloud e foco em personalização, o sistema prepara o usuário para decisões financeiras seguras e autônomas, elevando o padrão de atendimento digital. A visão de futuro inclui análise de grafos para recomendações inteligentes, detecção de fraudes e visualização de redes financeiras, tornando o MestreGrana um diferencial competitivo para empresas e educadores.

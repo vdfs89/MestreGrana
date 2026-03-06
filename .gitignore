@@ -1,3 +1,6 @@
+# Arquivos de credenciais
+.env
+secrets.toml
 # Arquivo de variáveis de ambiente
 .env
 __pycache__/

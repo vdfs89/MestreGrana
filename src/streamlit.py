@@ -15,6 +15,12 @@ import streamlit_webrtc as webrtc
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
+from datetime import datetime
+
+try:
+    from pymongo import MongoClient
+except Exception:
+    MongoClient = None
 
 # Busca as chaves primeiro em st.secrets, depois em variáveis de ambiente
 def get_secret_or_env(key):
@@ -24,20 +30,37 @@ def get_secret_or_env(key):
         return os.environ.get(key)
 
 
-st.sidebar.markdown("**Status Atlas:** Removido")
-st.sidebar.markdown("**Status LLM:** 🟢 Online")
+atlas_status = "⚪ Não configurado"
+atlas_enabled = False
+mongo_client = None
+mongo_db = None
+produtos_collection = None
+usuarios_collection = None
+transacoes_collection = None
+feedbacks_collection = None
+historico_collection = None
 
+MONGO_URI = get_secret_or_env("MONGODB_ATLAS_URI")
+if MONGO_URI and MongoClient:
+    try:
+        mongo_client = MongoClient(MONGO_URI, tls=True, serverSelectionTimeoutMS=5000)
+        mongo_db = mongo_client["InvestimentoDIO"]
+        mongo_db.command("ping")
+        produtos_collection = mongo_db["produtos"]
+        usuarios_collection = mongo_db["usuarios"]
+        transacoes_collection = mongo_db["transacoes"]
+        feedbacks_collection = mongo_db["feedbacks"]
+        historico_collection = mongo_db["historico"]
+        atlas_enabled = True
+        atlas_status = "🟢 Online"
+    except Exception:
+        atlas_status = "🔴 Offline"
+elif MONGO_URI and not MongoClient:
+    atlas_status = "🟠 pymongo ausente"
 
 st.set_page_config(page_title="FinanceForge", page_icon="💸")
-
-
-
-# Busca as chaves primeiro em st.secrets, depois em variáveis de ambiente
-def get_secret_or_env(key):
-    try:
-        return st.secrets[key]
-    except Exception:
-        return os.environ.get(key)
+st.sidebar.markdown(f"**Status Atlas:** {atlas_status}")
+st.sidebar.markdown("**Status LLM:** 🟢 Online")
 
 GROQ_KEY = get_secret_or_env("GROQ_API_KEY")
 GEMINI_KEY = get_secret_or_env("GEMINI_API_KEY")
@@ -58,12 +81,16 @@ client_openai = OpenAI(api_key=OPENAI_KEY)
 def ler_dados_financeiros():
     try:
         perfil = json.load(open("data/perfil_investidor.json", "r", encoding='utf-8'))
-        # Busca produtos diretamente do MongoDB Atlas
-        produtos_cursor = produtos_collection.find()
-        produtos = list(produtos_cursor)
-        # Remove o campo '_id' do MongoDB para evitar problemas ao criar DataFrame
-        for p in produtos:
-            p.pop('_id', None)
+        if atlas_enabled and produtos_collection is not None:
+            # Busca produtos diretamente do MongoDB Atlas
+            produtos_cursor = produtos_collection.find()
+            produtos = list(produtos_cursor)
+            # Remove o campo '_id' do MongoDB para evitar problemas ao criar DataFrame
+            for p in produtos:
+                p.pop('_id', None)
+        else:
+            with open("data/produtos_financeiros.json", "r", encoding="utf-8") as f:
+                produtos = json.load(f)
         transacoes = pd.read_csv("data/transacoes.csv")
         historico = pd.read_csv("data/historico_atendimento.csv")
         return perfil, produtos, transacoes, historico
@@ -145,23 +172,43 @@ def montar_contexto_rag():
         if submit and nome and email:
             try:
                 ip = requests.get("https://api.ipify.org").text
-                # Verifica duplicidade de email ou IP
-                usuario_existente = usuarios_collection.find_one({"$or": [{"email": email}, {"ip": ip}]})
-                if usuario_existente:
-                    st.warning("Usuário já cadastrado com este email ou IP. Seu histórico será carregado.")
+                if atlas_enabled and usuarios_collection is not None and historico_collection is not None:
+                    # Verifica duplicidade de email ou IP
+                    usuario_existente = usuarios_collection.find_one({"$or": [{"email": email}, {"ip": ip}]})
+                    if usuario_existente:
+                        st.warning("Usuário já cadastrado com este email ou IP. Seu histórico será carregado.")
+                    else:
+                        usuarios_collection.insert_one(
+                            {"nome": nome, "email": email, "ip": ip, "data": pd.Timestamp.now()}
+                        )
+                        st.success(f"Bem-vindo, {nome}! Seu acesso foi registrado.")
+
+                    # Salva histórico de login
+                    historico_collection.insert_one(
+                        {"usuario": nome, "email": email, "acao": "login", "ip": ip, "data": pd.Timestamp.now()}
+                    )
+
+                    # Carrega histórico do usuário
+                    historico_usuario = list(
+                        historico_collection.find({"usuario": nome, "email": email}).sort("data", -1)
+                    )
+                    if historico_usuario:
+                        st.info("Seu histórico de acessos:")
+                        for h in historico_usuario:
+                            st.write(f"{h['acao']} em {h['data']:%d/%m/%Y %H:%M} - IP: {h.get('ip','-')}")
+                    else:
+                        st.info("Nenhum histórico encontrado.")
                 else:
-                    usuarios_collection.insert_one({"nome": nome, "email": email, "ip": ip, "data": pd.Timestamp.now()})
-                    st.success(f"Bem-vindo, {nome}! Seu acesso foi registrado.")
-                # Salva histórico de login
-                historico_collection.insert_one({"usuario": nome, "email": email, "acao": "login", "ip": ip, "data": pd.Timestamp.now()})
-                # Carrega histórico do usuário
-                historico_usuario = list(historico_collection.find({"usuario": nome, "email": email}).sort("data", -1))
-                if historico_usuario:
-                    st.info("Seu histórico de acessos:")
-                    for h in historico_usuario:
+                    # Fallback local sem persistência em banco
+                    if "historico_login_local" not in st.session_state:
+                        st.session_state["historico_login_local"] = []
+                    st.session_state["historico_login_local"].append(
+                        {"usuario": nome, "email": email, "acao": "login", "ip": ip, "data": datetime.now()}
+                    )
+                    st.success(f"Bem-vindo, {nome}! Login registrado localmente (Atlas indisponível).")
+                    st.info("Histórico local da sessão:")
+                    for h in reversed(st.session_state["historico_login_local"][-5:]):
                         st.write(f"{h['acao']} em {h['data']:%d/%m/%Y %H:%M} - IP: {h.get('ip','-')}")
-                else:
-                    st.info("Nenhum histórico encontrado.")
             except Exception as e:
                 st.error(f"Erro ao registrar login: {e}")
     perfil, produtos, transacoes, historico = ler_dados_financeiros()

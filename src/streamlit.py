@@ -16,11 +16,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 import requests
 from datetime import datetime
+from dotenv import load_dotenv
+
+try:
+    import psycopg2
+except Exception:
+    psycopg2 = None
 
 try:
     from pymongo import MongoClient
 except Exception:
     MongoClient = None
+
+# Carrega variaveis locais do .env (na nuvem, st.secrets prevalece)
+load_dotenv()
 
 # Busca as chaves primeiro em st.secrets, depois em variáveis de ambiente
 def get_secret_or_env(key):
@@ -30,8 +39,30 @@ def get_secret_or_env(key):
         return os.environ.get(key)
 
 
+@st.cache_resource
+def init_postgres_connection():
+    db_url = get_secret_or_env("DATABASE_URL")
+    if not db_url:
+        return None
+    if psycopg2 is None:
+        raise RuntimeError("Dependencia psycopg2-binary nao instalada")
+    return psycopg2.connect(db_url)
+
+
+@st.cache_data(ttl=300)
+def get_postgres_version():
+    conn = init_postgres_connection()
+    if conn is None:
+        return None
+    with conn.cursor() as cur:
+        cur.execute("SELECT version();")
+        row = cur.fetchone()
+    return row[0] if row else None
+
+
 atlas_status = "⚪ Não configurado"
 atlas_enabled = False
+neon_status = "⚪ Não configurado"
 mongo_client = None
 mongo_db = None
 produtos_collection = None
@@ -58,8 +89,19 @@ if MONGO_URI and MongoClient:
 elif MONGO_URI and not MongoClient:
     atlas_status = "🟠 pymongo ausente"
 
+DATABASE_URL = get_secret_or_env("DATABASE_URL")
+if DATABASE_URL:
+    try:
+        _ = get_postgres_version()
+        neon_status = "🟢 Online"
+    except Exception:
+        neon_status = "🔴 Offline"
+elif not DATABASE_URL:
+    neon_status = "⚪ Não configurado"
+
 st.set_page_config(page_title="FinanceForge", page_icon="💸")
 st.sidebar.markdown(f"**Status Atlas:** {atlas_status}")
+st.sidebar.markdown(f"**Status Neon:** {neon_status}")
 st.sidebar.markdown("**Status LLM:** 🟢 Online")
 
 GROQ_KEY = get_secret_or_env("GROQ_API_KEY")
@@ -91,7 +133,11 @@ def ler_dados_financeiros():
         else:
             with open("data/produtos_financeiros.json", "r", encoding="utf-8") as f:
                 produtos = json.load(f)
-        transacoes = pd.read_csv("data/transacoes.csv")
+        conn_pg = init_postgres_connection()
+        if conn_pg:
+            transacoes = pd.read_sql("SELECT * FROM transactions", conn_pg)
+        else:
+            transacoes = pd.read_csv("data/transacoes.csv")
         historico = pd.read_csv("data/historico_atendimento.csv")
         return perfil, produtos, transacoes, historico
     except Exception as e:
@@ -437,14 +483,53 @@ if st.session_state['show_form']:
 # --- Atualização dinâmica do contexto RAG ---
 def atualizar_contexto_system():
     contexto_rag = montar_contexto_rag()
+    perfil, produtos, transacoes, _ = ler_dados_financeiros()
+
+    dedutiveis_keywords = {
+        "medico", "consulta", "saude", "hospital", "clinica", "plano de saude",
+        "faculdade", "graduacao", "pos", "mestrado", "doutorado", "educacao"
+    }
+    resumo_deducoes = "Nenhuma despesa potencialmente dedutível identificada no período."
+    if transacoes is not None and "tipo" in transacoes.columns and "categoria" in transacoes.columns and "valor" in transacoes.columns:
+        despesas = transacoes[transacoes["tipo"] == "saida"].copy()
+        if not despesas.empty:
+            despesas["categoria_norm"] = despesas["categoria"].astype(str).str.lower()
+            mask = despesas["categoria_norm"].apply(lambda c: any(k in c for k in dedutiveis_keywords))
+            dedutiveis = despesas[mask]
+            if not dedutiveis.empty:
+                total_dedutivel = dedutiveis["valor"].sum()
+                categorias = sorted(set(dedutiveis["categoria"].astype(str).tolist()))
+                resumo_deducoes = (
+                    f"Total potencialmente dedutível: R$ {total_dedutivel:.2f}. "
+                    f"Categorias encontradas: {categorias}."
+                )
+
     return {
         "role": "system",
         "content": (
-            "Você é o FinanceForge, um agente financeiro inteligente e proativo. "
-            "Baseie suas respostas EXCLUSIVAMENTE nos dados fornecidos abaixo. "
-            "Nunca invente informações financeiras. Se não souber algo, admita e peça atualização dos dados. "
-            "Seja consultivo, educativo e empático. Responda sempre em português.\n\n"
-            f"--- CONTEXTO DO CLIENTE ---\n{contexto_rag}\n---------------------------"
+            "Você é o MestreGrana, um conselheiro financeiro inteligente e especialista em Imposto de Renda da Pessoa Física (IRPF) focado no Brasil. "
+            "Seu objetivo é ajudar o usuário a organizar suas finanças diárias e facilitar a declaração anual de impostos. "
+            "\n\n"
+            "Tom de voz: amigável, direto, didático e encorajador. "
+            "Explique termos financeiros e tributários complexos de forma simples. "
+            "\n\n"
+            "Funções principais:\n"
+            "1) Análise de gastos e alertas de orçamento.\n"
+            "2) Radar de deduções: identificar despesas potencialmente dedutíveis e lembrar de guardar comprovantes.\n"
+            "3) Guia do IRPF: indicar a ficha correta da Receita para cada item.\n"
+            "\n"
+            "Regras tributárias que você domina:\n"
+            "- Saúde é dedutível sem limite legal específico na declaração, desde que comprovada.\n"
+            "- Educação dedutível com limite anual legal (ensino regular). Cursos livres não são dedutíveis.\n"
+            "- Verbas rescisórias, FGTS e PDV são isentos, mas devem constar em Rendimentos Isentos e Não Tributáveis.\n"
+            "\n"
+            "Sempre baseie as respostas EXCLUSIVAMENTE nos dados fornecidos. "
+            "Nunca invente informações financeiras. Se não souber, admita e peça atualização dos dados. "
+            "Responda sempre em português.\n\n"
+            f"--- CONTEXTO DO CLIENTE ---\n{contexto_rag}\n"
+            f"--- RESUMO IRPF (PRÉ-ANÁLISE) ---\n{resumo_deducoes}\n"
+            "---------------------------\n\n"
+            "Aviso legal obrigatório: você é um assistente de IA e casos tributários específicos podem exigir orientação de contador."
         )
     }
 
@@ -460,10 +545,9 @@ for i, msg in enumerate(st.session_state.messages):
             # Exibe o provedor se for resposta do agente
             if msg["role"] == "assistant":
                 # Busca o provedor na mensagem anterior (se disponível)
-                    "Você é o MestreGrana, um agente financeiro inteligente e proativo. "
-                    prev = st.session_state.messages[i-1]
-                    if isinstance(prev, dict) and "provider" in prev:
-                        st.caption(f"Provedor: {prev['provider']}")
+                prev = st.session_state.messages[i-1]
+                if isinstance(prev, dict) and "provider" in prev:
+                    st.caption(f"Provedor: {prev['provider']}")
 
 if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
     # Atualiza o contexto RAG antes de cada pergunta
@@ -585,17 +669,16 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
 
 # --- Histórico de conversas ---
 st.subheader("Histórico de Conversas")
-if "chat_history" not in st.session_state:
-    st.session_state["chat_history"] = []
-for msg in st.session_state.messages:
-    if msg["role"] != "system":
-        st.session_state["chat_history"].append(msg)
-if st.session_state["chat_history"]:
-    for i, msg in enumerate(st.session_state["chat_history"]):
+
+# Filtra as mensagens em tempo real sem duplicar
+chat_history = [msg for msg in st.session_state.messages if msg["role"] != "system"]
+
+if chat_history:
+    for i, msg in enumerate(chat_history):
         st.markdown(f"**{msg['role'].capitalize()}:** {msg['content']}")
     if st.button("Exportar histórico (CSV)"):
         import pandas as pd
-        df_hist = pd.DataFrame(st.session_state["chat_history"])
+        df_hist = pd.DataFrame(chat_history)
         st.download_button("Baixar histórico CSV", df_hist.to_csv(index=False), "historico_chat.csv", mime="text/csv")
 
 

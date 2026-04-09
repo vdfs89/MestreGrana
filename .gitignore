@@ -6,3 +6,9 @@ secrets.toml
 __pycache__/
 .env
 .vscode/
+
+# Arquivos de mídia gerados dinamicamente
+*.mp3
+*.wav
+temp_voice.wav
+resposta_groq.mp3

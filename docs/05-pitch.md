@@ -1,12 +1,3 @@
-# 05 - Pitch do Projeto
+## 🚀 Pitch de Negócios
 
-## Roteiro
-1. Apresentação do desafio DIO
-2. Demonstração do FinanceForge (chat, áudio, failover)
-3. Explicação dos diferenciais técnicos
-4. Resultados e próximos passos
-
-## Frases-Chave
-- "Mentoria financeira resiliente, sempre disponível."
-- "Respostas baseadas em dados reais, sem alucinação."
-- "Acessível, interativo e pronto para o futuro."
+O MestreGrana é uma solução de IA para educação financeira, desenhada para escalar em ambientes corporativos, bootcamps e consultorias. Com arquitetura robusta, integração cloud e foco em personalização, o sistema prepara o usuário para decisões financeiras seguras e autônomas, elevando o padrão de atendimento digital. A visão de futuro inclui análise de grafos para recomendações inteligentes, detecção de fraudes e visualização de redes financeiras, tornando o MestreGrana um diferencial competitivo para empresas e educadores.

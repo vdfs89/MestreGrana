@@ -99,7 +99,7 @@ if DATABASE_URL:
 elif not DATABASE_URL:
     neon_status = "⚪ Não configurado"
 
-st.set_page_config(page_title="FinanceForge", page_icon="💸")
+st.set_page_config(page_title="MestreGrana", page_icon="💸")
 st.sidebar.markdown(f"**Status Atlas:** {atlas_status}")
 st.sidebar.markdown(f"**Status Neon:** {neon_status}")
 st.sidebar.markdown("**Status LLM:** 🟢 Online")
@@ -276,34 +276,105 @@ def montar_contexto_rag():
     return contexto
 
 
-# --- Modularização: Função de failover ---
-def failover_llm(messages):
+# --- 1. A Batalha de Modelos (Groq vs Gemini) ---
+def gerar_respostas_candidatas(messages):
+    """Pede respostas para Groq e Gemini."""
+    respostas = {}
+
     try:
-        response = client_groq.chat.completions.create(
+        resp_groq = client_groq.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages
-        )
-        return response.choices[0].message.content, "Groq (Llama)"
+        ).choices[0].message.content
+        respostas["Groq (Llama 3)"] = resp_groq
     except Exception as e:
-        st.warning(f"Groq offline: {e}. Alternando para Gemini...")
+        print(f"Groq falhou: {e}")
+
     try:
+        prompt_text = f"{messages[0]['content']}\n\nUsuário: {messages[-1]['content']}"
         model = genai.GenerativeModel('gemini-1.5-flash')
-        prompt = f"{messages[0]['content']}\n\nUsuário: {messages[-1]['content']}"
-        response = model.generate_content(prompt)
-        return response.text, "Google Gemini"
+        resp_gemini = model.generate_content(prompt_text).text
+        respostas["Google Gemini"] = resp_gemini
     except Exception as e:
-        st.warning(f"Gemini offline: {e}. Alternando para OpenAI...")
+        print(f"Gemini falhou: {e}")
+
+    return respostas
+
+
+# --- 2. O Juiz Implacável (OpenAI) ---
+def auditor_juiz_multimodelo(pergunta, respostas_candidatas, contexto):
+    """O GPT-4o-mini avalia as respostas candidatas e elege a campeã."""
+    prompt_auditor = f"""
+    Você é o Juiz Sênior da Receita Federal e Auditor Financeiro Chefe.
+    Sua tarefa é avaliar pareceres de dois consultores IA e escolher o MAIS SEGURO e EXATO.
+
+    DADOS DO CLIENTE E REGRAS TRIBUTÁRIAS: {contexto}
+    PERGUNTA DO CLIENTE: {pergunta}
+
+    RESPOSTAS DOS CONSULTORES:
+    """
+
+    for provedor, texto in respostas_candidatas.items():
+        prompt_auditor += f"\n--- [{provedor}] ---\n{texto}\n"
+
+    prompt_auditor += """
+    Critérios de Avaliação:
+    1. Zero alucinação (não inventar saldo ou transações).
+    2. Precisão nas regras do Imposto de Renda (IRPF).
+    3. Empatia e clareza.
+
+    Responda APENAS com um JSON estrito neste formato:
+    {
+      "aprovado": true_ou_false,
+      "provedor_vencedor": "Nome do provedor que deu a melhor resposta",
+      "motivo": "Explicação curta do porquê ele venceu",
+      "resposta_final": "A cópia exata da resposta vencedora (pode fazer pequenas correções tributárias se necessário)"
+    }
+
+    Se TODAS as respostas forem perigosas ou inventarem dados, marque "aprovado": false e explique o motivo.
+    """
+
     try:
         response = client_openai.chat.completions.create(
             model="gpt-4o-mini",
-            messages=messages
+            messages=[{"role": "system", "content": prompt_auditor}],
+            response_format={"type": "json_object"},
+            temperature=0.0
         )
-        return response.choices[0].message.content, "OpenAI"
-    except Exception:
-        return "Desculpe, não consegui conectar a nenhum modelo de IA.", "Erro"
+        veredito = json.loads(response.choices[0].message.content)
+        return (
+            veredito.get("aprovado", False),
+            veredito.get("provedor_vencedor", ""),
+            veredito.get("motivo", ""),
+            veredito.get("resposta_final", "")
+        )
+    except Exception as e:
+        return False, "", f"Erro no Tribunal da IA: {e}", ""
 
-def get_ai_response(messages):
-    return failover_llm(messages)
+
+def executar_mesa_redonda(messages, pergunta, contexto_atual):
+    respostas_candidatas = gerar_respostas_candidatas(messages)
+
+    if not respostas_candidatas:
+        return False, "Erro de Conexão", "Desculpe, meus servidores estão offline no momento.", "Sem respostas candidatas"
+
+    aprovado, vencedor, motivo, melhor_resposta = auditor_juiz_multimodelo(
+        pergunta, respostas_candidatas, contexto_atual
+    )
+
+    if aprovado:
+        provider = f"🏆 {vencedor} (Auditado por OpenAI)"
+        print(f"O Juiz escolheu {vencedor} porque: {motivo}")
+        return True, provider, melhor_resposta, motivo
+
+    resposta_bloqueada = (
+        "⚠️ **Alerta de Segurança Fiscal:** Meus consultores geraram análises inconsistentes "
+        "com as regras da Receita Federal para a sua pergunta. "
+        "Para proteger sua declaração de IRPF, a resposta foi bloqueada."
+    )
+    provider = f"Sistema de Segurança 🛑 (Motivo: {motivo})"
+    print(f"Bloqueio duplo! {motivo}")
+    return False, provider, resposta_bloqueada, motivo
 
 def play_audio(text):
     st.markdown("**Transcrição do áudio:**")
@@ -348,7 +419,7 @@ def gerar_audio_groq(texto, voice="autumn", style="excited", api_key=None):
 
 # --- Interface ---
 
-st.title("💸 FinanceForge: Mentor Financeiro Proativo")
+st.title("💸 MestreGrana: Mentor Financeiro Proativo")
 # Inicializa o histórico de mensagens para evitar erro
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
@@ -390,18 +461,24 @@ if webrtc_ctx.audio_receiver:
             texto = ""
         if texto:
             st.session_state.messages.append({"role": "user", "content": texto})
-            resposta, provedor = get_ai_response([{"role": "user", "content": texto}])
+            contexto_atual = st.session_state.messages[0]["content"] if st.session_state.messages else ""
+            aprovado, provedor, resposta, _ = executar_mesa_redonda(
+                st.session_state.messages,
+                texto,
+                contexto_atual,
+            )
             resposta_box.success(f"Resposta ({provedor}): {resposta}")
             # No bloco de resposta em áudio
-            api_key_groq = get_secret_or_env("GROQ_TTS_API_KEY")
-            audio_path = gerar_audio_groq(resposta, voice="autumn", style="excited", api_key=api_key_groq)
-            if audio_path:
-                with open(audio_path, "rb") as f:
-                    data = f.read()
-                    b64 = base64.b64encode(data).decode()
-                    st.markdown(f'<audio controls src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
-            else:
-                st.warning("Erro ao gerar áudio da resposta.")
+            if aprovado:
+                api_key_groq = get_secret_or_env("GROQ_TTS_API_KEY")
+                audio_path = gerar_audio_groq(resposta, voice="autumn", style="excited", api_key=api_key_groq)
+                if audio_path:
+                    with open(audio_path, "rb") as f:
+                        data = f.read()
+                        b64 = base64.b64encode(data).decode()
+                        st.markdown(f'<audio controls src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
+                else:
+                    st.warning("Erro ao gerar áudio da resposta.")
 
 # --- Resumo mensal automático ao abrir o app ---
 if 'show_form' not in st.session_state:
@@ -578,11 +655,17 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
             st.warning("Pergunta fora do escopo financeiro! O agente só responde sobre finanças pessoais, investimentos, metas e produtos financeiros.")
         else:
             with st.spinner("Consultando mentor financeiro..."):
-                resposta, provider = get_ai_response(st.session_state.messages)
+                contexto_atual = st.session_state.messages[0]["content"] if st.session_state.messages else ""
+                aprovado, provider, resposta, _ = executar_mesa_redonda(
+                    st.session_state.messages,
+                    prompt,
+                    contexto_atual,
+                )
             with st.chat_message("assistant"):
                 st.markdown(f"**[{provider}]** {resposta}")
-                st.session_state.messages.append({"role": "assistant", "content": resposta})
-                play_audio(resposta)
+                st.session_state.messages.append({"role": "assistant", "content": resposta, "provider": provider})
+                if aprovado:
+                    play_audio(resposta)
             st.divider()
             st.markdown("**Sugestões para você continuar:**")
             if st.button("Simular aporte mensal para meta de reserva", key="sugestao_aporte"):
@@ -654,12 +737,18 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
         st.divider()
         st.markdown("**Sugestões para você continuar:**")
     else:
-        with st.spinner("Consultando mentor financeiro..."):
-            resposta, provider = get_ai_response(st.session_state.messages)
+        with st.spinner("Consultando Llama e Gemini... passando pelo Juiz (GPT-4)..."):
+            contexto_atual = st.session_state.messages[0]["content"] if st.session_state.messages else ""
+            aprovado, provider, resposta, _ = executar_mesa_redonda(
+                st.session_state.messages,
+                prompt,
+                contexto_atual,
+            )
         with st.chat_message("assistant"):
             st.markdown(f"**[{provider}]** {resposta}")
-            st.session_state.messages.append({"role": "assistant", "content": resposta})
-            play_audio(resposta)
+            st.session_state.messages.append({"role": "assistant", "content": resposta, "provider": provider})
+            if aprovado:
+                play_audio(resposta)
         st.divider()
         st.markdown("**Sugestões para você continuar:**")
         st.button("Simular aporte mensal para meta de reserva", key="sugestao_aporte")

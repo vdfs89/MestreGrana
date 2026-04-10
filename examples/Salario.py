@@ -1,4 +1,3 @@
-def calcular_imposto(salario):
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Tuple, Dict
 

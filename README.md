@@ -1,4 +1,8 @@
-﻿# MestreGrana
+﻿<p align="center">
+	<img src="img/unnamed.jpg" alt="Banner MestreGrana" width="100%" />
+</p>
+
+# MestreGrana
 
 Mentor financeiro com IA para apoio em educacao financeira e orientacao de IRPF no Brasil, com respostas auditadas por um juiz multimodelo.
 

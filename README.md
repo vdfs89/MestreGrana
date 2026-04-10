@@ -73,6 +73,34 @@ pip install -r src/requirements.txt
 streamlit run src/streamlit.py
 ```
 
+## Testes e CI (GitHub Actions)
+
+O projeto possui pipeline automatizado em .github/workflows/python-tests.yml.
+
+Quando ocorre push ou pull request, o GitHub Actions:
+- cria um runner Ubuntu
+- instala dependencias de src/requirements.txt
+- executa a suite de testes em tests/
+
+### Rodar testes localmente
+
+Para reproduzir o mesmo comportamento do CI e evitar erro de import no pytest:
+
+Windows (PowerShell):
+
+```powershell
+$env:PYTHONPATH='.'
+python -m pytest tests/
+```
+
+Linux/Mac:
+
+```bash
+PYTHONPATH=. python -m pytest tests/
+```
+
+Observacao: em alguns ambientes, executar apenas pytest tests/ pode gerar ModuleNotFoundError durante a coleta.
+
 ## Banco de Dados Neon
 
 O schema esta em scripts/neon_schema.sql e pode ser aplicado com:
@@ -124,6 +152,12 @@ libpq-dev
 
 - Verifique permissao de microfone no navegador
 - Teste outro navegador
+
+### ModuleNotFoundError ao rodar testes
+
+- Sintoma comum: erro ao importar exemplos ou modulos da raiz durante o pytest
+- Causa: PYTHONPATH sem a raiz do projeto
+- Solucao recomendada: usar python -m pytest com PYTHONPATH=. (como no workflow de CI)
 
 ## Seguranca
 

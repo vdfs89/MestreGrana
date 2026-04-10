@@ -1,3 +1,4 @@
+import math
 from typing import Dict
 
 class CalculadoraExportacao:
@@ -33,8 +34,11 @@ class CalculadoraExportacao:
             float: Valor final da exportação com desconto.
 
         Raises:
-            ValueError: Se peso ou preço forem menores ou iguais a zero.
+            ValueError: Se peso ou preço forem menores ou iguais a zero, ou se não forem números válidos.
         """
+        if not math.isfinite(peso) or not math.isfinite(preco):
+            raise ValueError("Peso e preço devem ser números válidos e finitos.")
+
         if peso <= 0 or preco <= 0:
             raise ValueError("Peso e preço devem ser maiores que zero.")
 
@@ -45,12 +49,16 @@ class CalculadoraExportacao:
 if __name__ == "__main__":
     app = CalculadoraExportacao()
     try:
-        p = float(input("Peso: ").replace(',', '.'))
-        pr = float(input("Preço: ").replace(',', '.'))
+        p_input = input("Peso: ").replace(',', '.')
+        pr_input = input("Preço: ").replace(',', '.')
+
+        p = float(p_input)
+        pr = float(pr_input)
+
         cli = input("Tipo de Cliente: ").strip()
         resultado = app.calcular(p, pr, cli)
         print(f"\n✅ Valor Final da Remessa: ${resultado:.2f}")
     except ValueError as e:
-        print(f"❌ Erro de Negócio: {e}")
+        print(f"❌ Erro de Entrada ou Negócio: {e}")
     except Exception as e:
         print(f"⚠️ Erro Inesperado: {e}")

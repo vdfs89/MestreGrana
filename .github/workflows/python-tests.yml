@@ -20,6 +20,12 @@ jobs:
           pip install -r src/requirements.txt
           pip install pytest # Garante que o pytest esteja la
 
+      - name: Debug Python path
+        run: |
+          pwd
+          ls -la
+          python -c "import os, sys; print('CWD:', os.getcwd()); print('PYTHONPATH:', os.getenv('PYTHONPATH')); print('sys.path:', sys.path)"
+
       - name: Run tests
         env:
           PYTHONPATH: .

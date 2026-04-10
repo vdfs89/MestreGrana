@@ -120,9 +120,27 @@ client_openai = OpenAI(api_key=OPENAI_KEY)
 
 
 # --- Modularização: Função de leitura dos dados ---
+@st.cache_data(ttl=600)
+def carregar_perfil_investidor():
+    with open("data/perfil_investidor.json", "r", encoding='utf-8') as f:
+        return json.load(f)
+
+@st.cache_data(ttl=600)
+def carregar_produtos_financeiros():
+    with open("data/produtos_financeiros.json", "r", encoding="utf-8") as f:
+        return json.load(f)
+
+@st.cache_data(ttl=300)
+def carregar_transacoes_csv():
+    return pd.read_csv("data/transacoes.csv")
+
+@st.cache_data(ttl=300)
+def carregar_historico_atendimento():
+    return pd.read_csv("data/historico_atendimento.csv")
+
 def ler_dados_financeiros():
     try:
-        perfil = json.load(open("data/perfil_investidor.json", "r", encoding='utf-8'))
+        perfil = carregar_perfil_investidor()
         if atlas_enabled and produtos_collection is not None:
             # Busca produtos diretamente do MongoDB Atlas
             produtos_cursor = produtos_collection.find()
@@ -131,14 +149,13 @@ def ler_dados_financeiros():
             for p in produtos:
                 p.pop('_id', None)
         else:
-            with open("data/produtos_financeiros.json", "r", encoding="utf-8") as f:
-                produtos = json.load(f)
+            produtos = carregar_produtos_financeiros()
         conn_pg = init_postgres_connection()
         if conn_pg:
             transacoes = pd.read_sql("SELECT * FROM transactions", conn_pg)
         else:
-            transacoes = pd.read_csv("data/transacoes.csv")
-        historico = pd.read_csv("data/historico_atendimento.csv")
+            transacoes = carregar_transacoes_csv()
+        historico = carregar_historico_atendimento()
         return perfil, produtos, transacoes, historico
     except Exception as e:
         st.error(f"Erro ao ler dados financeiros: {e}")
@@ -684,7 +701,7 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
     # --- Formatação visual para perguntas sobre gastos, metas ou recomendações ---
     if any(p in prompt_lower for p in ["gasto", "despesa", "transacao", "extrato"]):
         try:
-            df = pd.read_csv("data/transacoes.csv")
+            df = carregar_transacoes_csv()
             st.subheader("Tabela de Gastos Recentes")
             st.dataframe(df)
             # Gráfico de barras dos gastos por categoria
@@ -701,8 +718,7 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
             st.warning("Não foi possível exibir a tabela de gastos.")
     if "meta" in prompt_lower:
         try:
-            with open("data/perfil_investidor.json", "r", encoding='utf-8') as f:
-                perfil = json.load(f)
+            perfil = carregar_perfil_investidor()
             metas = pd.DataFrame(perfil["metas"])
             st.subheader("Metas Financeiras")
             st.dataframe(metas)
@@ -710,8 +726,7 @@ if prompt := st.chat_input("Pergunte sobre metas, investimentos, gastos..."):
             st.warning("Não foi possível exibir a tabela de metas.")
     if any(p in prompt_lower for p in ["investimento", "recomendacao", "produto"]):
         try:
-            with open("data/produtos_financeiros.json", "r", encoding='utf-8') as f:
-                produtos = json.load(f)
+            produtos = carregar_produtos_financeiros()
             produtos_df = pd.DataFrame(produtos)
             st.subheader("Catálogo de Produtos Financeiros")
             st.dataframe(produtos_df)

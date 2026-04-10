@@ -26,5 +26,13 @@ class TestCalculadoraExportacao(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.calc.calcular(1, -100, "Novo cliente")
 
+    def test_peso_nan(self):
+        with self.assertRaises(ValueError):
+            self.calc.calcular(float('nan'), 100, "Novo cliente")
+
+    def test_preco_inf(self):
+        with self.assertRaises(ValueError):
+            self.calc.calcular(10, float('inf'), "Novo cliente")
+
 if __name__ == "__main__":
     unittest.main()

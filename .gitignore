@@ -12,3 +12,4 @@ __pycache__/
 *.wav
 temp_voice.wav
 resposta_groq.mp3
+venv_test/

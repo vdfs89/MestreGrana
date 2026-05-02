@@ -5,12 +5,10 @@ streamlit
 speechrecognition
 streamlit-webrtc
 groq
-google-genai
 openai
 gTTS
 pandas
 langdetect
 psycopg2-binary
 python-dotenv==1.0.1
-
-matplotlib
+tornado

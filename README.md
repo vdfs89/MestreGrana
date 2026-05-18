@@ -144,9 +144,12 @@ O MestreGrana implementa:
 - Rastreamento de conformidade tributária (tabela `tax_compliance`)
 - Auditoria completa de alterações (`audit_log`)
 - Suporte a documentação anexada (`supporting_documents`)
+- **Consentimento de cookies LGPD** (banner, `user_consents`)
 - Criptografia TLS em transmissão
 - Verificação de credenciais em variáveis de ambiente
 - Bloqueio de senhas no `.gitignore`
+
+Veja [docs/05-cookies-consent.md](docs/05-cookies-consent.md) para detalhes sobre consentimento e [docs/TERMO_DE_USO.md](docs/TERMO_DE_USO.md) para termos completos.
 
 **Importante**: Este é um assistente educacional, não substitui contador ou consultor tributário.
 

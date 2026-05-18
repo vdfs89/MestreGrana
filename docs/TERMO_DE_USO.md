@@ -45,6 +45,52 @@ Para exercer direitos LGPD, entre em contato via issues do repositório GitHub.
 - **Logs de acesso**: Retidos por 90 dias para segurança
 - **Após exclusão**: Dados são removidos em até 30 dias
 
+## 2.5 Política de Cookies e Consentimento
+
+### O que são Cookies
+
+Cookies são pequenos arquivos de texto armazenados no seu navegador para:
+
+- **✅ Necessários** (obrigatório): Manter sua sessão, lembrar login, funcionalidades básicas do app
+- **📊 Analytics** (opcional): Entender como você usa o app, melhorar experiência, corrigir bugs
+- **⚙️ Preferências** (opcional): Lembrar suas configurações, tema escuro, atalhos personalizados
+
+### Consentimento LGPD
+
+Na primeira acesso, você verá um banner solicitando seu consentimento:
+
+| Cookie | Obrigatório | Dados Coletados | Provedor |
+|--------|-----------|-----------------|----------|
+| Necessários | ✅ Sim | Session ID, Auth Token | MestreGrana |
+| Analytics | ❌ Não | Páginas visitadas, cliques, erros | Google Analytics, Groq, OpenAI |
+| Preferências | ❌ Não | Tema, idioma, histórico de busca | MestreGrana |
+
+### Dados Coletados com Analytics (se consentir)
+
+Se autorizar analytics, coletamos:
+- Páginas visitadas e tempo de uso
+- Botões clicados, funcionalidades utilizadas
+- Erros encontrados (para correção)
+- Navegador, SO, resolução (não identifica você individualmente)
+- Prompts/queries de chatbot (para melhorar precisão das respostas)
+
+**Estes dados são anonimizados, encriptados em trânsito (TLS) e nunca vendidos a terceiros.**
+
+### Revogação de Consentimento
+
+A qualquer momento, você pode:
+1. **Limpar cookies**: Abra F12 → Application → Cookies → Delete all
+2. **Revogar consentimento**: Acesse novamente para modificar preferências
+3. **Solicitar exclusão**: Crie uma issue em `github.com/vdfs89/MestreGrana` com assunto "LGPD: Revogar Consentimento"
+
+### Cookies de Terceiros
+
+Utilizamos cookies de:
+- **Google Analytics**: Análise anônima de uso
+- **Groq/OpenAI**: Logging de queries para melhorar modelos (sem dados sensíveis)
+
+Estes terceiros têm suas próprias políticas de privacidade que você pode consultar.
+
 ## 3. Conformidade Tributária
 
 ### 3.1 O que o MestreGrana NÃO Faz

@@ -98,6 +98,19 @@ CREATE TABLE IF NOT EXISTS supporting_documents (
     is_verified BOOLEAN DEFAULT FALSE
 );
 
+-- Consentimento de Cookies e Dados (LGPD)
+CREATE TABLE IF NOT EXISTS user_consents (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+    consent_type VARCHAR(50), -- cookies_analytics, marketing_email, data_processing, etc
+    consent_data JSONB, -- {'necessary': true, 'analytics': true, 'preferences': false, 'timestamp': '2026-05-17T...', 'version': '1.0'}
+    consented_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    revoked_at TIMESTAMP,
+    ip_address VARCHAR(45),
+    user_agent VARCHAR(500),
+    UNIQUE(user_id, consent_type, consented_at)
+);
+
 -- Índices úteis para consultas frequentes
 CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions(user_id, transaction_date DESC);
 CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);
@@ -108,3 +121,5 @@ CREATE INDEX IF NOT EXISTS idx_tax_compliance_user_year ON tax_compliance(user_i
 CREATE INDEX IF NOT EXISTS idx_audit_log_table_date ON audit_log(table_name, changed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(changed_by);
 CREATE INDEX IF NOT EXISTS idx_supporting_docs_transaction ON supporting_documents(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_user_consents_user_type ON user_consents(user_id, consent_type);
+CREATE INDEX IF NOT EXISTS idx_user_consents_timestamp ON user_consents(consented_at DESC);

@@ -56,9 +56,55 @@ CREATE TABLE IF NOT EXISTS ai_insights (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Conformidade Tributária (IRPF)
+CREATE TABLE IF NOT EXISTS tax_compliance (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+    cpf VARCHAR(11),
+    income_type VARCHAR(50), -- salário, PJ, freela, MEI, etc
+    fiscal_year INTEGER,
+    total_income NUMERIC(14, 2),
+    deductible_expenses NUMERIC(14, 2),
+    estimated_tax_liability NUMERIC(14, 2),
+    validation_status VARCHAR(20), -- draft, pending_review, validated
+    last_reviewed_by VARCHAR(255), -- contador responsável
+    last_reviewed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Auditoria e Rastreabilidade
+CREATE TABLE IF NOT EXISTS audit_log (
+    id SERIAL PRIMARY KEY,
+    table_name VARCHAR(100) NOT NULL,
+    operation VARCHAR(10) NOT NULL, -- INSERT, UPDATE, DELETE
+    record_id INTEGER,
+    changed_by VARCHAR(255),
+    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    old_values JSONB,
+    new_values JSONB,
+    ip_address VARCHAR(45)
+);
+
+-- Documentação de Suporte (Notas Fiscais, Recibos, etc)
+CREATE TABLE IF NOT EXISTS supporting_documents (
+    id SERIAL PRIMARY KEY,
+    user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
+    transaction_id INTEGER REFERENCES transactions(id) ON DELETE SET NULL,
+    document_type VARCHAR(50), -- invoice, receipt, bank_statement, etc
+    document_url TEXT,
+    file_hash VARCHAR(64), -- SHA-256 para integridade
+    upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_verified BOOLEAN DEFAULT FALSE
+);
+
 -- Índices úteis para consultas frequentes
 CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions(user_id, transaction_date DESC);
 CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);
 CREATE INDEX IF NOT EXISTS idx_budgets_user_month ON budgets(user_id, month_year);
 CREATE INDEX IF NOT EXISTS idx_debts_user ON debts(user_id);
 CREATE INDEX IF NOT EXISTS idx_ai_insights_user_date ON ai_insights(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tax_compliance_user_year ON tax_compliance(user_id, fiscal_year DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_table_date ON audit_log(table_name, changed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(changed_by);
+CREATE INDEX IF NOT EXISTS idx_supporting_docs_transaction ON supporting_documents(transaction_id);

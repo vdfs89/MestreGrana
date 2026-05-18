@@ -123,6 +123,19 @@ Os dados mockados usados pelo app estão em:
 - Não publique `.env`, secrets ou credenciais.
 - Casos tributários específicos devem ser validados com contador.
 - O projeto foi pensado para demonstração, estudo e apoio educacional.
+- **Leia [TERMO_DE_USO.md](docs/TERMO_DE_USO.md)** antes de usar em dados reais — contém avisos legais, LGPD e limitações.
+
+## Conformidade e Segurança
+
+O MestreGrana implementa:
+- Rastreamento de conformidade tributária (tabela `tax_compliance`)
+- Auditoria completa de alterações (`audit_log`)
+- Suporte a documentação anexada (`supporting_documents`)
+- Criptografia TLS em transmissão
+- Verificação de credenciais em variáveis de ambiente
+- Bloqueio de senhas no `.gitignore`
+
+**Importante**: Este é um assistente educacional, não substitui contador ou consultor tributário.
 
 ## Créditos
 

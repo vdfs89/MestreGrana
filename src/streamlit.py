@@ -22,6 +22,15 @@ import requests
 from datetime import datetime
 from dotenv import load_dotenv
 
+# Importa módulo de branding (crítico para UI)
+try:
+    from branding import apply_custom_theme, render_header, COLORS
+except ImportError as e:
+    print(f"Aviso: Módulo de branding não disponível: {e}")
+    def apply_custom_theme(): pass
+    def render_header(): pass
+    COLORS = {}
+
 # Importa novos módulos de funcionalidades
 try:
     from audit_logs import render_audit_page
@@ -29,13 +38,10 @@ try:
     from products_simulator import render_catalog_page
     from cookies_consent import CookieConsent
     from data_security import DataSecurity
-    from branding import apply_custom_theme, render_header, COLORS
 except ImportError as e:
     print(f"Aviso: Alguns módulos não estão disponíveis: {e}")
     render_audit_page = render_reports_page = render_catalog_page = None
     CookieConsent = DataSecurity = None
-    apply_custom_theme = render_header = None
-    COLORS = {}
 
 try:
     import psycopg2
@@ -121,8 +127,7 @@ elif not DATABASE_URL:
 st.set_page_config(page_title="MestreGrana", page_icon="💸", layout="wide")
 
 # Aplicar tema customizado
-if apply_custom_theme:
-    apply_custom_theme()
+apply_custom_theme()
 
 st.sidebar.markdown(f"**Status Atlas:** {atlas_status}")
 st.sidebar.markdown(f"**Status Neon:** {neon_status}")
@@ -241,8 +246,7 @@ with st.sidebar:
         CookieConsent.render_consent_banner()
 
 # --- Renderização do Header com Branding ---
-if render_header:
-    render_header()
+render_header()
 
 # --- Renderização de páginas ---
 if pagina == "📊 Dashboard":

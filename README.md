@@ -4,179 +4,46 @@
 
 # MestreGrana
 
-Mentor financeiro com IA para apoio em educacao financeira e orientacao de IRPF no Brasil, com respostas auditadas por um juiz multimodelo.
+MestreGrana é um assistente financeiro em Streamlit que combina chat com IA, áudio, dashboard e dados mockados para apoiar educação financeira e organização do histórico do usuário.
 
-## Visao Geral
+## O que este projeto entrega
 
-O app combina tres modelos para aumentar qualidade e seguranca:
-- Groq (Llama 3) gera uma resposta candidata
-- Google Gemini gera outra resposta candidata
-- OpenAI (gpt-4o-mini) atua como juiz e escolhe a melhor resposta (ou bloqueia respostas inseguras)
+- Chat financeiro com resposta gerada por múltiplos modelos e validação por juiz.
+- Chat de voz com captura do microfone e resposta em áudio.
+- Dashboard com visão de saldo, transações e catálogo de produtos.
+- Exportação de histórico em CSV.
+- Login rápido com persistência opcional em MongoDB Atlas.
+- Fallback local com arquivos em data/ quando o banco não estiver disponível.
 
-A aplicacao roda em Streamlit e usa:
-- Neon PostgreSQL (principal, para transacoes e schema fiscal)
-- MongoDB Atlas (opcional, para produtos e historico legado)
-- fallback local com arquivos em data/
+## Como funciona
 
-## Principais Recursos
+1. O usuário conversa com o assistente no Streamlit.
+2. O app consulta os dados de perfil, transações e histórico.
+3. As respostas passam por um fluxo multimodelo com Groq, Gemini e OpenAI.
+4. O resultado é exibido com áudio, histórico e contexto de apoio.
 
-- Chat financeiro com foco em IRPF
-- Auditoria multimodelo com bloqueio de resposta insegura
-- Radar de deducoes (saude e educacao) no contexto do agente
-- Chat de voz e resposta em audio
-- Dashboard com metricas e visualizacoes
-- Exportacao de historico em CSV
-
-## Arquitetura (Resumo)
-
-1. Usuario pergunta no chat.
-2. Groq e Gemini geram respostas candidatas.
-3. GPT-4o-mini avalia as candidatas com base no contexto financeiro e nas regras tributarias.
-4. O app mostra a resposta vencedora (ou bloqueio de seguranca).
-
-## Requisitos
+## Stack principal
 
 - Python 3.10+
-- Dependencias em src/requirements.txt
-- Para deploy Streamlit Cloud, arquivo packages.txt com libpq-dev
+- Streamlit
+- PostgreSQL no Neon
+- MongoDB Atlas como suporte opcional
+- Groq, Google Gemini e OpenAI
 
-## Configuracao de Ambiente
-
-Crie um arquivo .env local (nunca commitar):
-
-```env
-# IA
-GROQ_API_KEY=...
-GEMINI_API_KEY=...
-OPENAI_API_KEY=...
-GROQ_TTS_API_KEY=...
-
-# Banco principal (Neon)
-DATABASE_URL=postgresql://usuario:senha@host/neondb?sslmode=require
-
-# Opcional (Atlas)
-MONGODB_ATLAS_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/
-```
-
-No Streamlit Cloud, configure as mesmas chaves em Secrets (TOML).
-
-## Instalacao e Execucao Local
-
-```bash
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# Linux/Mac
-source .venv/bin/activate
-
-pip install -r src/requirements.txt
-streamlit run src/streamlit.py
-```
-
-## Testes e CI (GitHub Actions)
-
-O projeto possui pipeline automatizado em .github/workflows/python-tests.yml.
-
-Quando ocorre push ou pull request, o GitHub Actions:
-- cria um runner Ubuntu
-- instala dependencias de src/requirements.txt
-- executa a suite de testes em tests/
-
-### Rodar testes localmente
-
-Para reproduzir o mesmo comportamento do CI e evitar erro de import no pytest:
-
-Windows (PowerShell):
-
-```powershell
-$env:PYTHONPATH='.'
-python -m pytest tests/
-```
-
-Linux/Mac:
-
-```bash
-PYTHONPATH=. python -m pytest tests/
-```
-
-Observacao: em alguns ambientes, executar apenas pytest tests/ pode gerar ModuleNotFoundError durante a coleta.
-
-## Banco de Dados Neon
-
-O schema esta em scripts/neon_schema.sql e pode ser aplicado com:
-
-```bash
-python setup_db.py
-```
-
-Tabelas principais:
-- users
-- categories (com is_tax_deductible)
-- transactions
-- budgets
-- debts
-- ai_insights
-
-## Deploy no Streamlit Cloud
-
-1. Garanta que packages.txt existe na raiz com:
-
-```txt
-libpq-dev
-```
-
-2. Use psycopg2-binary sem pin estrito em src/requirements.txt.
-3. Configure Secrets no painel do app.
-4. Faça redeploy.
-
-## Troubleshooting
-
-### Falha de conexao no Neon
-
-- Verifique DATABASE_URL
-- Confirme usuario/senha no Neon
-- Confirme sslmode=require
-- Rode python setup_db.py para testar conexao real
-
-### Falha de build no Streamlit Cloud (pg_config/libpq)
-
-- Verifique se packages.txt contem libpq-dev
-- Verifique se src/requirements.txt contem psycopg2-binary
-
-### Atlas offline
-
-- O app continua funcional com fallback local para produtos/historico
-- Verifique MONGODB_ATLAS_URI e whitelist de IP no Atlas
-
-### Audio nao funciona
-
-- Verifique permissao de microfone no navegador
-- Teste outro navegador
-
-### ModuleNotFoundError ao rodar testes
-
-- Sintoma comum: erro ao importar exemplos ou modulos da raiz durante o pytest
-- Causa: PYTHONPATH sem a raiz do projeto
-- Solucao recomendada: usar python -m pytest com PYTHONPATH=. (como no workflow de CI)
-
-## Seguranca
-
-- Nunca publique .env, secrets.toml ou credenciais
-- Rotacione chaves se houver exposicao
-- .gitignore ja bloqueia arquivos sensiveis e audios temporarios
-
-## Estrutura do Projeto
+## Estrutura do repositório
 
 ```txt
 .
 ├── data/
 ├── docs/
 ├── examples/
+├── img/
 ├── scripts/
 │   └── neon_schema.sql
 ├── src/
-│   ├── streamlit.py
+│   ├── config.py
 │   ├── requirements.txt
+│   ├── streamlit.py
 │   └── teste_mongodb.py
 ├── tests/
 ├── setup_db.py
@@ -184,10 +51,79 @@ libpq-dev
 └── README.md
 ```
 
-## Aviso Legal
+## Pré-requisitos
 
-O MestreGrana e um assistente de IA para apoio educacional e organizacao financeira. Casos tributarios especificos devem ser validados com contador.
+- Python 3.10 ou superior.
+- Dependências listadas em [src/requirements.txt](src/requirements.txt).
+- Arquivo [packages.txt](packages.txt) na raiz com `libpq-dev` para o deploy no Streamlit Cloud.
 
-## Creditos
+## Configuração de ambiente
 
-Desenvolvido por vdfs89 no contexto de bootcamp Santander DIO / Bradesco DIO.
+Crie um arquivo `.env` local com as chaves necessárias:
+
+```env
+GROQ_API_KEY=...
+GEMINI_API_KEY=...
+OPENAI_API_KEY=...
+GROQ_TTS_API_KEY=...
+
+DATABASE_URL=postgresql://usuario:senha@host/neondb?sslmode=require
+MONGODB_ATLAS_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/
+```
+
+O app também pode usar `st.secrets` no Streamlit Cloud. Se alguma chave obrigatória estiver ausente, a aplicação encerra com mensagem clara.
+
+## Executar localmente
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r src/requirements.txt
+streamlit run src/streamlit.py
+```
+
+## Banco de dados
+
+O schema principal está em [scripts/neon_schema.sql](scripts/neon_schema.sql) e pode ser aplicado com:
+
+```bash
+python setup_db.py
+```
+
+O app tenta usar o Neon primeiro. Se o banco ou o Atlas não estiverem disponíveis, ele usa os arquivos locais em data/ como fallback.
+
+## Testes
+
+O projeto tem testes em [tests/](tests/) e pode ser executado assim:
+
+```powershell
+$env:PYTHONPATH='.'
+python -m pytest tests/
+```
+
+O uso de `python -m pytest` evita problemas de importação que podem acontecer em alguns ambientes quando o `PYTHONPATH` não inclui a raiz do projeto.
+
+## Deploy no Streamlit Cloud
+
+1. Garanta que [packages.txt](packages.txt) contenha `libpq-dev`.
+2. Configure as variáveis em Secrets do Streamlit Cloud.
+3. Faça o deploy apontando para [src/streamlit.py](src/streamlit.py).
+
+## Dados de exemplo
+
+Os dados mockados usados pelo app estão em:
+
+- [data/perfil_investidor.json](data/perfil_investidor.json)
+- [data/produtos_financeiros.json](data/produtos_financeiros.json)
+- [data/transacoes.csv](data/transacoes.csv)
+- [data/historico_atendimento.csv](data/historico_atendimento.csv)
+
+## Observações importantes
+
+- Não publique `.env`, secrets ou credenciais.
+- Casos tributários específicos devem ser validados com contador.
+- O projeto foi pensado para demonstração, estudo e apoio educacional.
+
+## Créditos
+
+Projeto desenvolvido no contexto do bootcamp Santander DIO / Bradesco DIO.

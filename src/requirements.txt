@@ -1,16 +1,28 @@
-matplotlib
-pymongo
-google-genai
-streamlit
-speechrecognition
-streamlit-webrtc
-groq
-google-genai
-openai
-gTTS
-pandas
-langdetect
-psycopg2-binary
+# Core Framework
+streamlit==1.36.0
 python-dotenv==1.0.1
 
-matplotlib
+# Database
+psycopg2-binary==2.9.9
+pymongo==4.6.1
+
+# LLM & AI
+groq==0.4.2
+google-genai==0.3.0
+openai==1.14.0
+
+# Audio
+gTTS==2.4.0
+SpeechRecognition==3.10.1
+streamlit-webrtc==0.47.1
+
+# Data & Visualization
+pandas==2.1.4
+matplotlib==3.8.2
+
+# Utilities
+langdetect==1.0.9
+
+# Testing (optional - install separately)
+# pytest==7.4.3
+# pytest-cov==4.1.0

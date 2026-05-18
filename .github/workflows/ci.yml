@@ -1,0 +1,122 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    
+    - name: Install flake8
+      run: pip install flake8
+    
+    - name: Lint with flake8
+      run: |
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings
+        flake8 src/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+
+  syntax-check:
+    name: Python Syntax Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Check Python syntax
+      run: |
+        python -m py_compile src/streamlit.py
+        python -m py_compile src/config.py
+        python -m py_compile src/branding.py
+        python -m py_compile src/audit_logs.py
+        python -m py_compile src/financial_reports.py
+        python -m py_compile src/products_simulator.py
+        python -m py_compile src/cookies_consent.py
+        python -m py_compile src/data_security.py
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r src/requirements.txt
+        pip install pytest pytest-cov
+    
+    - name: Run tests with pytest
+      run: |
+        pytest tests/ -v --cov=src --cov-report=xml --tb=short
+      continue-on-error: true
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.xml
+        flags: unittests
+        fail_ci_if_error: false
+
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: mestregrana:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  notify:
+    name: Notify Status
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [lint, syntax-check, test, build]
+    
+    steps:
+    - name: Check workflow status
+      run: |
+        if [ "${{ needs.lint.result }}" = "failure" ] || \
+           [ "${{ needs.syntax-check.result }}" = "failure" ] || \
+           [ "${{ needs.test.result }}" = "failure" ]; then
+          echo "❌ CI Pipeline failed"
+          exit 1
+        fi
+        echo "✅ CI Pipeline passed"

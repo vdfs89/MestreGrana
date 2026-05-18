@@ -90,6 +90,19 @@ O schema principal está em [scripts/neon_schema.sql](scripts/neon_schema.sql) e
 python setup_db.py
 ```
 
+**Neon integrado com:**
+- ✅ Connection pooling (reutilização eficiente de conexões)
+- ✅ Health check automático
+- ✅ Retry com backoff exponencial (até 3 tentativas)
+- ✅ Logging detalhado e tratamento robusto de erros
+
+Veja [docs/04-neon-integration.md](docs/04-neon-integration.md) para documentação técnica completa.
+
+**Validar conexão Neon:**
+```bash
+python src/validate_neon.py
+```
+
 O app tenta usar o Neon primeiro. Se o banco ou o Atlas não estiverem disponíveis, ele usa os arquivos locais em data/ como fallback.
 
 ## Testes

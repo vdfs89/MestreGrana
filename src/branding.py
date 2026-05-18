@@ -142,19 +142,78 @@ def apply_custom_theme():
 
 
 def render_header():
-    """Renderiza o header/branding no topo da página"""
+    """Renderiza o header/branding profissional com pilares"""
     header_html = f"""
-    <div style="background: linear-gradient(135deg, {COLORS['dark']} 0%, {COLORS['primary']} 100%); 
-                padding: 24px 16px; border-radius: 8px; margin-bottom: 20px; 
-                text-align: center; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
-        <h1 style="color: {COLORS['white']}; margin: 0; font-size: 32px; font-weight: 700;">
-            <span style="color: {COLORS['primary']};">MG</span>
-            <span style="margin-left: 8px;">MestreGrana</span>
-        </h1>
-        <p style="color: {COLORS['white']}; margin: 8px 0 0 0; font-size: 14px; 
-                  font-weight: 500; letter-spacing: 1px; opacity: 0.9;">
-            {TAGLINE}
-        </p>
+    <div style="background: linear-gradient(135deg, {COLORS['dark']} 0%, rgba(4, 37, 64, 0.8) 100%); 
+                padding: 32px 24px; border-radius: 12px; margin-bottom: 28px; 
+                box-shadow: 0 8px 24px rgba(0, 203, 99, 0.15); border-top: 4px solid {COLORS['primary']};">
+        
+        <!-- Título e Tagline -->
+        <div style="text-align: center; margin-bottom: 28px;">
+            <h1 style="color: {COLORS['white']}; margin: 0 0 8px 0; font-size: 36px; font-weight: 700;">
+                <span style="color: {COLORS['primary']};">MG</span>
+                <span style="margin-left: 12px;">MestreGrana</span>
+            </h1>
+            <p style="color: {COLORS['white']}; margin: 0 0 8px 0; font-size: 14px; 
+                      font-weight: 500; letter-spacing: 1px; opacity: 0.95;">
+                {TAGLINE}
+            </p>
+            <p style="color: rgba(255, 255, 255, 0.85); margin: 0; font-size: 13px; 
+                      max-width: 500px; margin-left: auto; margin-right: auto; line-height: 1.5;">
+                Seu aliado inteligente para medir, planejar e multiplicar suas finanças.
+            </p>
+        </div>
+        
+        <!-- 4 Pilares -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 24px;">
+            <!-- Pilar 1: MEDE -->
+            <div style="background: rgba(0, 203, 99, 0.1); border-radius: 8px; padding: 16px; 
+                        text-align: center; border-left: 4px solid {COLORS['primary']};">
+                <div style="font-size: 28px; margin-bottom: 8px;">🎯</div>
+                <p style="color: {COLORS['primary']}; margin: 0 0 4px 0; font-weight: 600; font-size: 13px;">
+                    MEDE
+                </p>
+                <p style="color: rgba(255, 255, 255, 0.75); margin: 0; font-size: 11px; line-height: 1.4;">
+                    Acompanhe seus números com clareza
+                </p>
+            </div>
+            
+            <!-- Pilar 2: PLANEJA -->
+            <div style="background: rgba(0, 203, 99, 0.1); border-radius: 8px; padding: 16px; 
+                        text-align: center; border-left: 4px solid {COLORS['primary']};">
+                <div style="font-size: 28px; margin-bottom: 8px;">📊</div>
+                <p style="color: {COLORS['primary']}; margin: 0 0 4px 0; font-weight: 600; font-size: 13px;">
+                    PLANEJA
+                </p>
+                <p style="color: rgba(255, 255, 255, 0.75); margin: 0; font-size: 11px; line-height: 1.4;">
+                    Tome decisões inteligentes
+                </p>
+            </div>
+            
+            <!-- Pilar 3: MULTIPLICA -->
+            <div style="background: rgba(0, 203, 99, 0.1); border-radius: 8px; padding: 16px; 
+                        text-align: center; border-left: 4px solid {COLORS['primary']};">
+                <div style="font-size: 28px; margin-bottom: 8px;">📈</div>
+                <p style="color: {COLORS['primary']}; margin: 0 0 4px 0; font-weight: 600; font-size: 13px;">
+                    MULTIPLICA
+                </p>
+                <p style="color: rgba(255, 255, 255, 0.75); margin: 0; font-size: 11px; line-height: 1.4;">
+                    Transforme em crescimento
+                </p>
+            </div>
+            
+            <!-- Pilar 4: CONFIANÇA -->
+            <div style="background: rgba(0, 203, 99, 0.1); border-radius: 8px; padding: 16px; 
+                        text-align: center; border-left: 4px solid {COLORS['primary']};">
+                <div style="font-size: 28px; margin-bottom: 8px;">🔐</div>
+                <p style="color: {COLORS['primary']}; margin: 0 0 4px 0; font-weight: 600; font-size: 13px;">
+                    CONFIANÇA
+                </p>
+                <p style="color: rgba(255, 255, 255, 0.75); margin: 0; font-size: 11px; line-height: 1.4;">
+                    Segurança & Transparência
+                </p>
+            </div>
+        </div>
     </div>
     """
     st.markdown(header_html, unsafe_allow_html=True)
@@ -217,3 +276,54 @@ def render_section_divider(title=""):
 def get_color(name: str):
     """Retorna uma cor da paleta pelo nome"""
     return COLORS.get(name.lower(), COLORS['primary'])
+
+
+def render_footer():
+    """Renderiza o footer com badges de tecnologia"""
+    footer_html = f"""
+    <div style="background: {COLORS['dark']}; border-top: 2px solid {COLORS['primary']}; 
+                padding: 20px 24px; margin-top: 40px; border-radius: 8px;">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 32px; flex-wrap: wrap;">
+            <!-- Código Aberto -->
+            <div style="text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 6px;">💻</div>
+                <p style="color: {COLORS['white']}; margin: 0; font-size: 12px; font-weight: 500;">
+                    Código Aberto
+                </p>
+            </div>
+            
+            <!-- Python -->
+            <div style="text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 6px;">🐍</div>
+                <p style="color: {COLORS['white']}; margin: 0; font-size: 12px; font-weight: 500;">
+                    Python
+                </p>
+            </div>
+            
+            <!-- Streamlit -->
+            <div style="text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 6px;">⚡</div>
+                <p style="color: {COLORS['white']}; margin: 0; font-size: 12px; font-weight: 500;">
+                    Streamlit
+                </p>
+            </div>
+            
+            <!-- Seguro e Transparente -->
+            <div style="text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 6px;">🛡️</div>
+                <p style="color: {COLORS['white']}; margin: 0; font-size: 12px; font-weight: 500;">
+                    Seguro & Transparente
+                </p>
+            </div>
+            
+            <!-- Dados que geram valor -->
+            <div style="text-align: center;">
+                <div style="font-size: 24px; margin-bottom: 6px;">💎</div>
+                <p style="color: {COLORS['white']}; margin: 0; font-size: 12px; font-weight: 500;">
+                    Dados que geram valor
+                </p>
+            </div>
+        </div>
+    </div>
+    """
+    st.markdown(footer_html, unsafe_allow_html=True)

@@ -24,11 +24,12 @@ from dotenv import load_dotenv
 
 # Importa módulo de branding (crítico para UI)
 try:
-    from branding import apply_custom_theme, render_header, COLORS
+    from branding import apply_custom_theme, render_header, render_footer, COLORS
 except ImportError as e:
     print(f"Aviso: Módulo de branding não disponível: {e}")
     def apply_custom_theme(): pass
     def render_header(): pass
+    def render_footer(): pass
     COLORS = {}
 
 # Importa novos módulos de funcionalidades
@@ -858,3 +859,7 @@ else:
             st.text_area("Feedbacks recebidos:", value=conteudo, height=200)
         except Exception:
             st.info("Nenhum feedback recebido ainda.")
+
+# --- Renderização do Footer com Tecnologias ---
+st.markdown("")  # Espaço
+render_footer()

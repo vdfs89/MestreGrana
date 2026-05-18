@@ -145,11 +145,17 @@ O MestreGrana implementa:
 - Auditoria completa de alterações (`audit_log`)
 - Suporte a documentação anexada (`supporting_documents`)
 - **Consentimento de cookies LGPD** (banner, `user_consents`)
+- **Validação e sanitização robusta** de inputs (SQL injection, XSS)
+- **Prepared statements** em todas as queries (100% SQL injection safe)
 - Criptografia TLS em transmissão
 - Verificação de credenciais em variáveis de ambiente
 - Bloqueio de senhas no `.gitignore`
 
-Veja [docs/05-cookies-consent.md](docs/05-cookies-consent.md) para detalhes sobre consentimento e [docs/TERMO_DE_USO.md](docs/TERMO_DE_USO.md) para termos completos.
+Veja:
+- [docs/06-data-security.md](docs/06-data-security.md) - Segurança técnica
+- [docs/07-security-checklist.md](docs/07-security-checklist.md) - Checklist pré-deploy
+- [docs/05-cookies-consent.md](docs/05-cookies-consent.md) - Consentimento LGPD
+- [docs/TERMO_DE_USO.md](docs/TERMO_DE_USO.md) - Termos legais completos
 
 **Importante**: Este é um assistente educacional, não substitui contador ou consultor tributário.
 

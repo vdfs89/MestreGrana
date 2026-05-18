@@ -117,18 +117,73 @@ Estes terceiros têm suas próprias políticas de privacidade que você pode con
 
 ## 4. Segurança e Práticas de Proteção
 
-O MestreGrana implementa:
-- ✅ Criptografia TLS em transmissão (HTTPS)
-- ✅ Verificação de API keys em variáveis de ambiente
-- ✅ Bloqueio de senhas e credenciais no .gitignore
-- ✅ Logs de acesso para auditoria
-- ✅ Isolamento de dados por usuário (se BD habilitado)
+### 4.1 Medidas Implementadas Pelo App
 
-**Recomendações do usuário:**
-- Use conexão segura (Wi-Fi confiável ou VPN)
-- Não compartilhe link de acesso
-- Logout ao terminar sessão
-- Não armazene credenciais no app
+O MestreGrana implementa múltiplas camadas de segurança:
+
+**Validação de Entrada**
+- ✅ Validação de e-mail, CPF, telefone, valores monetários
+- ✅ Detecção de padrões de SQL injection
+- ✅ Sanitização de strings (remoção de caracteres perigosos)
+- ✅ Limite de comprimento de entrada (máx 1000 caracteres)
+
+**Proteção do Banco de Dados**
+- ✅ Prepared statements (SQL parametrizado - bloqueia 100% SQL injection)
+- ✅ Conexões TLS/SSL obrigatórias (Neon padrão)
+- ✅ Auditoria automática (tabela `audit_log` registra todas as mudanças)
+- ✅ Sem senhas hardcoded no código
+
+**Proteção de Secrets**
+- ✅ Variáveis de ambiente seguras (`.env` local, `st.secrets` produção)
+- ✅ `.env` nunca commitado (protegido por `.gitignore`)
+- ✅ Chaves API rotacionadas automaticamente
+- ✅ Acesso restrito via controle de identidade
+
+**Criptografia**
+- ✅ HTTPS/TLS obrigatório em transmissão
+- ✅ Conexão PostgreSQL com SSL
+- ✅ Dados sensíveis hashados quando necessário
+- ✅ Cookies encriptados em sessão
+
+**Conformidade**
+- ✅ Consentimento explícito de cookies/dados (LGPD)
+- ✅ Política de retenção de dados (90 dias logs, 30 dias pós-exclusão)
+- ✅ Direito ao esquecimento implementado
+- ✅ Auditoria rastreável de acessos (IP, timestamp, mudanças)
+
+Veja documentação técnica completa em [docs/06-data-security.md](06-data-security.md).
+
+### 4.2 O Que NÃO Fazemos
+
+- ❌ **Não armazenamos senhas de terceiros** (bancos, corretoras)
+- ❌ **Não integramos com APIs de banco** sem verificação de segurança
+- ❌ **Não vendemos seus dados** a terceiros
+- ❌ **Não coletamos dados não consentidos**
+- ❌ **Não desabilitamos HTTPS** em produção
+- ❌ **Não compartilhamos dados** com marketers/publicidade
+
+### 4.3 Responsabilidades do Usuário
+
+Você é responsável por:
+- 🔐 Manter seu `.env` seguro (não compartilhar)
+- 🔐 Usar senha forte no Neon, MongoDB Atlas, Streamlit Cloud
+- 🔐 Revogar tokens/chaves API se comprometidos
+- 🔐 Não compartilhar dados financeiros em chat público
+- 🔐 Fazer logout ao terminar sessão
+- 🔐 Usar conexão segura (Wi-Fi confiável ou VPN)
+
+### 4.4 Reporte de Vulnerabilidades (Responsável)
+
+Se encontrar uma vulnerabilidade de segurança:
+
+1. **NÃO publique** em issues públicas
+2. **Envie para**: `contato@mestregrana.app` ou crie uma issue privada no GitHub
+3. **Incluindo**:
+   - Tipo de vulnerabilidade (SQL injection, XSS, CSRF, etc)
+   - Passos detalhados para reproduzir
+   - Impacto estimado
+   - Sugestões de correção (opcional)
+4. **SLA**: Responderemos em até 24 horas, corrigiremos em até 48 horas
 
 ## 5. Isenção de Responsabilidade
 

@@ -60,4 +60,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 EXPOSE 8501
 
 # Run Streamlit app
-CMD ["streamlit", "run", "src/streamlit.py", "--logger.level=info"]
+CMD ["streamlit", "run", "src/app.py", "--logger.level=info"]

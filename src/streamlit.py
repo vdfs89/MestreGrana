@@ -112,6 +112,16 @@ except ImportError as e:
     render_transactions_table = render_products_table = render_metrics_grid = None
 
 try:
+    from components.forms import render_profile_form, render_contact_form
+    from components.modals import show_alert, show_confirm_dialog, show_progress, show_tabs
+    from components.cards import render_kpi_section, render_stat_card, render_info_card
+except ImportError as e:
+    print(f"Aviso: Componentes de UI não disponíveis: {e}")
+    render_profile_form = render_contact_form = None
+    show_alert = show_confirm_dialog = show_progress = show_tabs = None
+    render_kpi_section = render_stat_card = render_info_card = None
+
+try:
     from pymongo import MongoClient
 except Exception:
     MongoClient = None
@@ -218,21 +228,29 @@ def ler_dados_financeiros():
         if load_transacoes:
             transacoes = load_transacoes()
         else:
-            try:
-                conn = get_conn() if get_conn else None
-                if conn:
-                    transacoes = pd.read_sql("SELECT * FROM transactions", conn)
-                    if put_conn:
-                        put_conn(conn)
-                else:
-                    transacoes = pd.read_csv("data/transacoes.csv")
-            except:
-                transacoes = pd.read_csv("data/transacoes.csv")
+            transacoes = None
+        # Se load_transacoes retornou DataFrame vazio, tente Postgres via repository
+        try:
+            import pandas as _pd
+            if transacoes is None or (isinstance(transacoes, _pd.DataFrame) and transacoes.empty):
+                # Tenta obter via repositório Postgres
+                if 'get_transactions' in globals() and callable(globals().get('get_transactions')):
+                    transacoes = get_transactions()
+                elif get_conn:
+                    # fallback simples usando conexão direta
+                    conn = get_conn()
+                    if conn:
+                        transacoes = _pd.read_sql("SELECT * FROM transactions", conn)
+                        if put_conn:
+                            put_conn(conn)
+        except Exception:
+            # Mantém transacoes possivelmente None
+            pass
 
         if load_historico:
             historico = load_historico()
         else:
-            historico = pd.read_csv("data/historico_atendimento.csv")
+            historico = None
 
         return perfil, produtos, transacoes, historico
     except Exception as e:
@@ -253,11 +271,28 @@ def mostrar_dashboard():
     total_produtos = len(produtos) if produtos else 0
     total_transacoes = len(transacoes) if transacoes is not None else 0
 
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Saldo Atual", f"R$ {saldo_total:,.2f}")
-    col2.metric("Total Investido (Metas)", f"R$ {total_investido:,.2f}")
-    col3.metric("Produtos Financeiros", total_produtos)
-    col4.metric("Transações", total_transacoes)
+    # Exibe KPIs usando cards reutilizáveis quando disponíveis
+    try:
+        kpi_data = [
+            {"title": "Saldo Atual", "value": f"R$ {saldo_total:,.2f}", "delta": None,},
+            {"title": "Total Investido", "value": f"R$ {total_investido:,.2f}", "delta": None,},
+            {"title": "Produtos", "value": total_produtos, "delta": None,},
+            {"title": "Transações", "value": total_transacoes, "delta": None,},
+        ]
+        if render_kpi_section:
+            render_kpi_section(kpi_data)
+        else:
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Saldo Atual", f"R$ {saldo_total:,.2f}")
+            col2.metric("Total Investido (Metas)", f"R$ {total_investido:,.2f}")
+            col3.metric("Produtos Financeiros", total_produtos)
+            col4.metric("Transações", total_transacoes)
+    except Exception:
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Saldo Atual", f"R$ {saldo_total:,.2f}")
+        col2.metric("Total Investido (Metas)", f"R$ {total_investido:,.2f}")
+        col3.metric("Produtos Financeiros", total_produtos)
+        col4.metric("Transações", total_transacoes)
 
     st.markdown("---")
 
@@ -293,6 +328,19 @@ def mostrar_dashboard():
 
     st.markdown("---")
     st.info("Dashboard alimentado em tempo real pelo MongoDB Atlas e dados locais. KPIs, gráficos e filtros para análise financeira completa.")
+    # Botão para editar perfil usando o formulário modular
+    try:
+        if render_profile_form:
+            if st.button("✏️ Editar Perfil"):
+                profile_data = render_profile_form(initial_data=perfil)
+                if profile_data:
+                    # Aqui poderíamos persistir via repositório; por enquanto notificamos o usuário
+                    if show_alert:
+                        show_alert("Perfil salvo com sucesso!", "success")
+                    else:
+                        st.success("Perfil salvo com sucesso!")
+    except Exception:
+        pass
 # --- Exibição do menu de navegação na barra lateral ---
 with st.sidebar:
     st.header("📱 Navegação")

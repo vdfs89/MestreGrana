@@ -31,3 +31,21 @@ def put_conn(conn):
     if pool is None or conn is None:
         return
     pool.putconn(conn)
+
+
+def get_transactions(query="SELECT * FROM transactions"):
+    """Retorna transações como pandas.DataFrame usando a conexão do pool.
+
+    Se não houver pool configurado, retorna None.
+    """
+    try:
+        pool = get_pool()
+        if pool is None:
+            return None
+        conn = pool.getconn()
+        import pandas as pd
+        df = pd.read_sql(query, conn)
+        pool.putconn(conn)
+        return df
+    except Exception:
+        return None

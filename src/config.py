@@ -57,3 +57,56 @@ def check_neon_health():
         return status
     except Exception as e:
         return f"🟠 Erro - {str(e)[:30]}"
+
+
+def get_required_env(key: str):
+    """Retorna variável de ambiente obrigatória ou levanta KeyError se ausente."""
+    try:
+        # Prioriza st.secrets quando disponível (Streamlit Cloud)
+        value = None
+        try:
+            value = st.secrets.get(key)
+        except Exception:
+            value = None
+
+        if value:
+            return value
+
+        # Fallback para variáveis de ambiente locais
+        if key in os.environ:
+            return os.environ[key]
+
+        # Não encontrada
+        raise KeyError(f"Required environment variable '{key}' is missing")
+    except KeyError:
+        raise
+    except Exception:
+        raise KeyError(f"Required environment variable '{key}' is missing")
+
+
+def get_optional_env(key: str, default=None):
+    """Retorna variável de ambiente opcional, ou `default` se ausente."""
+    try:
+        try:
+            value = st.secrets.get(key)
+        except Exception:
+            value = None
+
+        if value is not None:
+            return value
+        return os.environ.get(key, default)
+    except Exception:
+        return os.environ.get(key, default)
+
+
+def validate_env_variable(key: str):
+    """Valida presença de variável de ambiente. Retorna True ou valor quando presente."""
+    try:
+        val = get_optional_env(key)
+        if val is None or val == "":
+            raise KeyError(f"Environment variable '{key}' is missing or empty")
+        return val
+    except KeyError:
+        raise
+    except Exception:
+        return None

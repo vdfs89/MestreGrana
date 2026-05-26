@@ -1,4 +1,4 @@
-# Arquivos de credenciais
+.env# Arquivos de credenciais
 .env
 secrets.toml
 # Arquivo de variáveis de ambiente
@@ -6,6 +6,9 @@ secrets.toml
 __pycache__/
 .env
 .vscode/
+
+# Pasta de imagens
+img/
 
 # Arquivos de mídia gerados dinamicamente
 *.mp3

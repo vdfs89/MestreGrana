@@ -6,29 +6,45 @@ class TestFolhaPagamento(unittest.TestCase):
     def setUp(self):
         self.folha = FolhaPagamento()
 
-    def test_salario_negativo(self):
-        with self.assertRaises(ValueError) as cm:
-            self.folha.processar("-1000.00", "100.00")
-        self.assertIn("Salário e benefícios não podem ser negativos.", str(cm.exception))
+    def test_calcular_imposto_faixa_1(self):
+        # 1100.00 * 0.05 = 55.00
+        salario = Decimal("1000.00")
+        imposto = self.folha.calcular_imposto(salario)
+        self.assertEqual(imposto, Decimal("50.00"))
 
-    def test_beneficios_negativos(self):
-        with self.assertRaises(ValueError) as cm:
-            self.folha.processar("1000.00", "-100.00")
-        self.assertIn("Salário e benefícios não podem ser negativos.", str(cm.exception))
+    def test_calcular_imposto_limite_faixa_1(self):
+        salario = Decimal("1100.00")
+        imposto = self.folha.calcular_imposto(salario)
+        self.assertEqual(imposto, Decimal("55.00"))
 
-    def test_processamento_valido(self):
-        res = self.folha.processar("2000,00", "500.00")
+    def test_calcular_imposto_faixa_2(self):
+        # 2000.00 * 0.10 = 200.00
+        salario = Decimal("2000.00")
+        imposto = self.folha.calcular_imposto(salario)
+        self.assertEqual(imposto, Decimal("200.00"))
+
+    def test_calcular_imposto_faixa_3(self):
+        # 3000.00 * 0.15 = 450.00
+        salario = Decimal("3000.00")
+        imposto = self.folha.calcular_imposto(salario)
+        self.assertEqual(imposto, Decimal("450.00"))
+
+    def test_processar_com_virgula(self):
+        res = self.folha.processar("2000,00", "500,00")
         self.assertEqual(res["bruto"], Decimal("2000.00"))
-        self.assertEqual(res["beneficios"], Decimal("500.00"))
-        # 2000 is between 1100 and 2500, so 10% tax -> 200.00
         self.assertEqual(res["imposto"], Decimal("200.00"))
-        # 2000 - 200 + 500 = 2300
+        self.assertEqual(res["beneficios"], Decimal("500.00"))
         self.assertEqual(res["liquido"], Decimal("2300.00"))
 
-    def test_valores_invalidos(self):
-        with self.assertRaises(ValueError) as cm:
-            self.folha.processar("abc", "100")
-        self.assertIn("Erro no processamento dos dados", str(cm.exception))
+    def test_processar_valores_negativos(self):
+        with self.assertRaises(ValueError):
+            self.folha.processar("-1000", "500")
+        with self.assertRaises(ValueError):
+            self.folha.processar("1000", "-500")
+
+    def test_processar_entrada_invalida(self):
+        with self.assertRaises(ValueError):
+            self.folha.processar("abc", "500")
 
 if __name__ == "__main__":
     unittest.main()

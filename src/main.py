@@ -16,9 +16,14 @@ try:
 except Exception:
     from _stubs import st
 
-# Ensure session state keys
-if "messages" not in st.session_state:
-    st.session_state["messages"] = []
+# Initialize session state
+try:
+    from core.state import init_session_state
+    init_session_state()
+except Exception:
+    # Fallback if state module unavailable
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = []
 
 # Delegate to existing app implementation
 runpy.run_path(str(app_path), run_name="__main__")

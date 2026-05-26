@@ -38,9 +38,15 @@ import os
 # Adiciona o diretório src/ ao caminho de importação
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from groq import Groq
-import google.genai as genai
-from openai import OpenAI
+import base64
+import pandas as pd
+import json
+import sys
+import os
+
+# Adiciona o diretório src/ ao caminho de importação
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
@@ -88,9 +94,22 @@ except ImportError as e:
     get_pool = get_conn = put_conn = None
 
 try:
-    import psycopg2
-except Exception:
-    psycopg2 = None
+    from repositories.mongo_repo import get_mongo_client, get_mongo_db, find_documents
+except ImportError as e:
+    print(f"Aviso: Repositório MongoDB não disponível: {e}")
+    get_mongo_client = get_mongo_db = find_documents = None
+
+try:
+    from core.llm_client import get_groq_client, get_gemini_client, get_openai_client, call_llm_with_fallback
+except ImportError as e:
+    print(f"Aviso: LLM clients não disponíveis: {e}")
+    get_groq_client = get_gemini_client = get_openai_client = call_llm_with_fallback = None
+
+try:
+    from components.tables import render_transactions_table, render_products_table, render_metrics_grid
+except ImportError as e:
+    print(f"Aviso: Componentes de tabelas não disponíveis: {e}")
+    render_transactions_table = render_products_table = render_metrics_grid = None
 
 try:
     from pymongo import MongoClient
@@ -130,28 +149,21 @@ neon_status = "⚪ Não configurado"
 mongo_client = None
 mongo_db = None
 produtos_collection = None
-usuarios_collection = None
-transacoes_collection = None
-feedbacks_collection = None
-historico_collection = None
 
-MONGO_URI = get_secret_or_env("MONGODB_ATLAS_URI")
-if MONGO_URI and MongoClient:
-    try:
-        mongo_client = MongoClient(MONGO_URI, tls=True, serverSelectionTimeoutMS=5000)
-        mongo_db = mongo_client["InvestimentoDIO"]
-        mongo_db.command("ping")
-        produtos_collection = mongo_db["produtos"]
-        usuarios_collection = mongo_db["usuarios"]
-        transacoes_collection = mongo_db["transacoes"]
-        feedbacks_collection = mongo_db["feedbacks"]
-        historico_collection = mongo_db["historico"]
-        atlas_enabled = True
-        atlas_status = "🟢 Online"
-    except Exception:
-        atlas_status = "🔴 Offline"
-elif MONGO_URI and not MongoClient:
-    atlas_status = "🟠 pymongo ausente"
+# Try to initialize MongoDB via mongo_repo
+try:
+    if get_mongo_client:
+        mongo_client = get_mongo_client()
+        if mongo_client:
+            mongo_db = get_mongo_db()
+            atlas_enabled = True
+            atlas_status = "🟢 Online"
+        else:
+            atlas_status = "🔴 Offline"
+    elif not get_secret_or_env("MONGODB_ATLAS_URI"):
+        atlas_status = "⚪ Não configurado"
+except Exception:
+    atlas_status = "🔴 Offline"
 
 DATABASE_URL = get_secret_or_env("DATABASE_URL")
 if DATABASE_URL:
@@ -178,11 +190,10 @@ if not GROQ_KEY or not GEMINI_KEY or not OPENAI_KEY:
     st.error("Erro: Uma ou mais chaves de API não foram encontradas em st.secrets ou no ambiente (.env). Verifique as configurações.")
     st.stop()
 
-
-# --- Inicialização dos Clientes ---
-client_groq = Groq(api_key=GROQ_KEY)
-genai.API_KEY = GEMINI_KEY
-client_openai = OpenAI(api_key=OPENAI_KEY)
+# Lazy initialization — clientes são carregados sob demanda via core.llm_client
+# client_groq = get_groq_client()
+# genai.API_KEY = GEMINI_KEY  # Deprecated — use get_gemini_client() instead
+# client_openai = get_openai_client()
 
 
 # --- Modularização: Função de leitura dos dados ---
@@ -195,11 +206,9 @@ def ler_dados_financeiros():
             with open("data/perfil_investidor.json", "r", encoding='utf-8') as f:
                 perfil = json.load(f)
 
-        if atlas_enabled and produtos_collection is not None:
-            produtos_cursor = produtos_collection.find()
-            produtos = list(produtos_cursor)
-            for p in produtos:
-                p.pop('_id', None)
+        if atlas_enabled and find_documents:
+            # Busca produtos do MongoDB Atlas via repository
+            produtos = find_documents("produtos")
         elif load_produtos:
             produtos = load_produtos()
         else:

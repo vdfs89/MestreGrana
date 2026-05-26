@@ -20,6 +20,9 @@ streamlit-webrtc==0.47.1
 pandas==2.1.4
 matplotlib==3.8.2
 
+# Web / Async server
+tornado>=6.3.0
+
 # Utilities
 langdetect==1.0.9
 

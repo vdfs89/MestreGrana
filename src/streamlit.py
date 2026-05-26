@@ -74,6 +74,19 @@ except ImportError as e:
     print(f"Aviso: Módulo de charts não disponível: {e}")
     plot_saldo_evolution = plot_gastos_categoria = plot_receitas_vs_despesas = None
 
+# Importa serviços e repositórios
+try:
+    from services.data_service import load_perfil, load_produtos, load_transacoes, load_historico
+except ImportError as e:
+    print(f"Aviso: Serviços de dados não disponíveis: {e}")
+    load_perfil = load_produtos = load_transacoes = load_historico = None
+
+try:
+    from repositories.postgres_repo import get_pool, get_conn, put_conn
+except ImportError as e:
+    print(f"Aviso: Repositório Postgres não disponível: {e}")
+    get_pool = get_conn = put_conn = None
+
 try:
     import psycopg2
 except Exception:
@@ -95,25 +108,20 @@ def get_secret_or_env(key):
         return os.environ.get(key)
 
 
-@st.cache_resource
-def init_postgres_connection():
-    db_url = get_secret_or_env("DATABASE_URL")
-    if not db_url:
-        return None
-    if psycopg2 is None:
-        raise RuntimeError("Dependencia psycopg2-binary nao instalada")
-    return psycopg2.connect(db_url)
-
-
 @st.cache_data(ttl=300)
 def get_postgres_version():
-    conn = init_postgres_connection()
-    if conn is None:
+    try:
+        conn = get_conn() if get_conn else None
+        if conn is None:
+            return None
+        with conn.cursor() as cur:
+            cur.execute("SELECT version();")
+            row = cur.fetchone()
+        if conn and put_conn:
+            put_conn(conn)
+        return row[0] if row else None
+    except Exception:
         return None
-    with conn.cursor() as cur:
-        cur.execute("SELECT version();")
-        row = cur.fetchone()
-    return row[0] if row else None
 
 
 atlas_status = "⚪ Não configurado"
@@ -180,23 +188,43 @@ client_openai = OpenAI(api_key=OPENAI_KEY)
 # --- Modularização: Função de leitura dos dados ---
 def ler_dados_financeiros():
     try:
-        perfil = json.load(open("data/perfil_investidor.json", "r", encoding='utf-8'))
+        # Use services when available, fallback to direct load
+        if load_perfil:
+            perfil = load_perfil()
+        else:
+            with open("data/perfil_investidor.json", "r", encoding='utf-8') as f:
+                perfil = json.load(f)
+
         if atlas_enabled and produtos_collection is not None:
-            # Busca produtos diretamente do MongoDB Atlas
             produtos_cursor = produtos_collection.find()
             produtos = list(produtos_cursor)
-            # Remove o campo '_id' do MongoDB para evitar problemas ao criar DataFrame
             for p in produtos:
                 p.pop('_id', None)
+        elif load_produtos:
+            produtos = load_produtos()
         else:
             with open("data/produtos_financeiros.json", "r", encoding="utf-8") as f:
                 produtos = json.load(f)
-        conn_pg = init_postgres_connection()
-        if conn_pg:
-            transacoes = pd.read_sql("SELECT * FROM transactions", conn_pg)
+
+        if load_transacoes:
+            transacoes = load_transacoes()
         else:
-            transacoes = pd.read_csv("data/transacoes.csv")
-        historico = pd.read_csv("data/historico_atendimento.csv")
+            try:
+                conn = get_conn() if get_conn else None
+                if conn:
+                    transacoes = pd.read_sql("SELECT * FROM transactions", conn)
+                    if put_conn:
+                        put_conn(conn)
+                else:
+                    transacoes = pd.read_csv("data/transacoes.csv")
+            except:
+                transacoes = pd.read_csv("data/transacoes.csv")
+
+        if load_historico:
+            historico = load_historico()
+        else:
+            historico = pd.read_csv("data/historico_atendimento.csv")
+
         return perfil, produtos, transacoes, historico
     except Exception as e:
         st.error(f"Erro ao ler dados financeiros: {e}")
@@ -264,6 +292,7 @@ with st.sidebar:
         [
             "💬 Assistente",
             "📊 Dashboard",
+            "🎤 Voz",
             "📋 Auditoria",
             "📈 Relatórios",
             "💼 Produtos & Simulador",
@@ -281,6 +310,17 @@ render_header()
 # --- Renderização de páginas ---
 if pagina == "📊 Dashboard":
     mostrar_dashboard()
+
+elif pagina == "🎤 Voz":
+    try:
+        from components.voice import render_voice_input, render_voice_output
+        st.title("🎤 Chat com Voz")
+        user_voice = render_voice_input()
+        if user_voice:
+            st.success(f"Você disse: {user_voice}")
+            render_voice_output("Ótimo! Recebi sua mensagem de voz.")
+    except ImportError:
+        st.error("❌ Componente de voz não disponível")
 
 elif pagina == "📋 Auditoria":
     if render_audit_page:
@@ -301,5 +341,5 @@ elif pagina == "💼 Produtos & Simulador":
         st.error("❌ Módulo de Produtos & Simulador não disponível")
 
 elif True:
-    # fallback: manter compatibilidade com app.py quando usado diretamente
+    # Assistente (fallback/default)
     pass

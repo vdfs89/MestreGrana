@@ -18,7 +18,8 @@ streamlit-webrtc==0.47.1
 
 # Data & Visualization
 pandas==2.1.4
-matplotlib==3.8.2
+plotly==5.18.0
+matplotlib==3.8.2  # Optional (lazy imports)
 
 # Web / Async server
 tornado>=6.3.0

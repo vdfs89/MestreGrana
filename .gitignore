@@ -1,4 +1,4 @@
-# Arquivos de credenciais
+.env# Arquivos de credenciais
 .env
 secrets.toml
 # Arquivo de variáveis de ambiente

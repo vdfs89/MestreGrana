@@ -170,13 +170,13 @@ for service, is_configured in status_summary.items():
 
 print("\n" + "=" * 70)
 if all_ok:
-    print("✅ TUDO PRONTO! Execute: streamlit run src/streamlit.py")
+    print("✅ TUDO PRONTO! Execute: streamlit run src/main.py")
 else:
     print("⚠️  FALTAM CONFIGURAÇÕES")
     print("\n📝 Próximos passos:")
     print("   1. Copie .env.example para .env")
     print("   2. Preencha suas chaves de API")
     print("   3. Execute novamente este script")
-    print("   4. Execute: streamlit run src/streamlit.py")
+    print("   4. Execute: streamlit run src/main.py")
 
 print("=" * 70 + "\n")

@@ -23,6 +23,12 @@ try:
     import streamlit as st
 except Exception:
     from _stubs import st
+# Garantir que set_page_config seja chamado antes de qualquer outro comando Streamlit
+try:
+    st.set_page_config(page_title="MestreGrana", page_icon="💸", layout="wide")
+except Exception:
+    # Se já foi chamado (por exemplo em ambiente de teste stub), ignore
+    pass
 import base64
 import pandas as pd
 import json
@@ -35,12 +41,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from groq import Groq
 import google.genai as genai
 from openai import OpenAI
-from gtts import gTTS
-import speech_recognition as sr
-import tempfile
-import streamlit_webrtc as webrtc
-import matplotlib.pyplot as plt
-import numpy as np
 import requests
 from datetime import datetime
 from dotenv import load_dotenv
@@ -66,6 +66,13 @@ except ImportError as e:
     print(f"Aviso: Alguns módulos não estão disponíveis: {e}")
     render_audit_page = render_reports_page = render_catalog_page = None
     CookieConsent = DataSecurity = None
+
+# Importa módulo de charts (Plotly-based)
+try:
+    from components.charts import plot_saldo_evolution, plot_gastos_categoria, plot_receitas_vs_despesas
+except ImportError as e:
+    print(f"Aviso: Módulo de charts não disponível: {e}")
+    plot_saldo_evolution = plot_gastos_categoria = plot_receitas_vs_despesas = None
 
 try:
     import psycopg2
@@ -148,8 +155,6 @@ if DATABASE_URL:
 elif not DATABASE_URL:
     neon_status = "⚪ Não configurado"
 
-st.set_page_config(page_title="MestreGrana", page_icon="💸", layout="wide")
-
 # Aplicar tema customizado
 apply_custom_theme()
 
@@ -219,24 +224,25 @@ def mostrar_dashboard():
 
     st.markdown("---")
 
-    # Gráfico de evolução do saldo
-    if historico is not None and "data" in historico.columns and "saldo" in historico.columns:
+    # Gráfico de evolução do saldo (Plotly)
+    if historico is not None and not historico.empty and "data" in historico.columns and "saldo" in historico.columns:
         st.subheader("Evolução do Saldo")
-        fig, ax = plt.subplots()
-        historico.plot(x="data", y="saldo", ax=ax, marker="o", color="#4F8A10")
-        ax.set_ylabel("Saldo (R$)")
-        ax.set_xlabel("Data")
-        st.pyplot(fig)
+        if plot_saldo_evolution:
+            fig = plot_saldo_evolution(historico)
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Módulo de gráficos não disponível")
 
-    # Gráfico de distribuição de gastos
-    if transacoes is not None and "categoria" in transacoes.columns and "valor" in transacoes.columns:
+    # Gráfico de distribuição de gastos (Plotly)
+    if transacoes is not None and not transacoes.empty and "categoria" in transacoes.columns and "valor" in transacoes.columns:
         st.subheader("Gastos por Categoria")
-        gastos_categoria = transacoes[transacoes["tipo"]=="saida"].groupby("categoria")["valor"].sum().sort_values()
-        fig2, ax2 = plt.subplots()
-        gastos_categoria.plot(kind="barh", ax=ax2, color="#FFB347")
-        ax2.set_xlabel("Valor (R$)")
-        ax2.set_ylabel("Categoria")
-        st.pyplot(fig2)
+        if plot_gastos_categoria:
+            fig = plot_gastos_categoria(transacoes)
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.warning("Módulo de gráficos não disponível")
 
     # Filtro de produtos financeiros
     if produtos:

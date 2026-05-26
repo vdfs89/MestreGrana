@@ -104,7 +104,7 @@ MONGODB_ATLAS_URI=mongodb+srv://... # Optional: https://mongodb.com
 ### 3. Validar e rodar
 ```bash
 python validate_all.py              # Test all connections
-streamlit run src/streamlit_app.py  # Start the app
+streamlit run src/main.py  # Start the app
 ```
 
 **Guia detalhado**: Veja [SETUP.md](SETUP.md) para instruções passo-a-passo de cada serviço.
@@ -162,7 +162,7 @@ pytest tests/ --cov=src --cov-report=html
 ### Streamlit Cloud
 1. Configure [packages.txt](packages.txt) com `libpq-dev`
 2. Coloque variáveis em **Secrets** (Settings → Secrets)
-3. Deploy apontando para `src/streamlit_app.py`
+3. Deploy apontando para `src/main.py`
 
 ### Docker (Local ou VPS)
 ```bash

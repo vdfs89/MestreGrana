@@ -85,23 +85,14 @@ Esperado:
 
 ## ✅ Checklist
 
-- [ ] Copiei `.env.example` para `.env`
-- [ ] Preenchí `GROQ_API_KEY`
-- [ ] Preenchí `GEMINI_API_KEY`
-- [ ] Preenchí `OPENAI_API_KEY` (ou deixei em branco)
-- [ ] Preenchí `DATABASE_URL` (Neon)
-- [ ] Preenchí `MONGODB_ATLAS_URI` (opcional)
-- [ ] Executei `python validate_all.py`
-- [ ] Tudo mostrou ✅
 
----
 
 ## ▶️ Executar a App
 
 Após validar com sucesso:
 
 ```bash
-streamlit run src/streamlit.py
+streamlit run src/main.py
 ```
 
 Esperado na sidebar:

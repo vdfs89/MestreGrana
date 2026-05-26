@@ -288,3 +288,70 @@ EXAMPLE_VALIDATION_SCHEMA = {
     "transaction_date": {"type": "date", "required": True, "format": "%Y-%m-%d"},
     "description": {"type": "string", "required": False, "max_length": 500},
 }
+
+
+# Compatibilidade: funções de nível de módulo esperadas pelos testes
+def validate_email(email: str):
+    return DataSecurity.validate_email(email)
+
+
+def validate_cpf(cpf: str):
+    return DataSecurity.validate_cpf(cpf)
+
+
+def validate_phone(phone: str):
+    return DataSecurity.validate_phone(phone)
+
+
+def sanitize_sql_input(value: str) -> str:
+    """
+    Sanitização básica para inputs SQL: remove comentários e caracteres de terminação
+    e duplica aspas simples para evitar injeção ao inserir em queries sem parametrização.
+    NOTA: sempre prefira prepared statements em vez de confiar nesse sanitizer.
+    """
+    if not isinstance(value, str):
+        return ""
+
+    # Remover comentários e token de terminação de comandos
+    cleaned = re.sub(r"(--|/\*|\*/)", "", value)
+    cleaned = cleaned.replace(";", "")
+
+    # Escapar aspas simples (duplica) para uso em queries que não usam bind params
+    cleaned = cleaned.replace("'", "''")
+
+    return cleaned
+
+
+def sanitize_html_input(value: str) -> str:
+    """
+    Sanitização simples de HTML para prevenção de XSS:
+    - Remove tags <script> e <iframe> com conteúdo
+    - Remove atributos de evento (on*)
+    - Remove esquemas javascript: de URIs
+    Retorna a string sanitizada, preservando tags seguras básicas.
+    """
+    if not isinstance(value, str):
+        return ""
+
+    sanitized = value
+
+    # Remover blocos de script e iframe
+    sanitized = re.sub(r"(?is)<script.*?>.*?</script>", "", sanitized)
+    sanitized = re.sub(r"(?is)<iframe.*?>.*?</iframe>", "", sanitized)
+
+    # Remover atributos on* (onerror, onclick, onload, etc.)
+    sanitized = re.sub(r"\s*on\w+\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^>\s]+)", "", sanitized, flags=re.IGNORECASE)
+
+    # Remover javascript: em URIs
+    sanitized = re.sub(r"(?i)javascript\s*:", "", sanitized)
+
+    # Opcional: escapar possíveis inserções residuais
+    sanitized = sanitized.replace("<script", "&lt;script").replace("</script>", "&lt;/script&gt;")
+
+    return sanitized.strip()
+
+
+def hash_password(password: str) -> str:
+    """Hash simples com salt (SHA-256). Para senhas reais, use bcrypt/passlib."""
+    return DataSecurity.hash_sensitive_data(password)
+

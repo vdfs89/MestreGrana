@@ -9,6 +9,7 @@ import streamlit as st
 COLORS = {
     "primary": "#00CB63",      # Verde Primário (logo, destaque)
     "dark": "#042540",         # Azul Escuro (background)
+    "dark_blue": "#042540",    # Alias para compatibilidade com testes
     "black": "#1F1F1F",        # Preto (texto principal)
     "gray": "#8B7280",         # Cinza (texto secundário)
     "white": "#FFFFFF",        # Branco (contraste)

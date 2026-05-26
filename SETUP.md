@@ -41,7 +41,7 @@ Esperado:
 🟢 Neon Database: Conectado - PostgreSQL 17.x
 🟢 MongoDB Atlas: Conectado (ou não configurado)
 
-✅ TUDO PRONTO! Execute: streamlit run src/app.py
+✅ TUDO PRONTO! Execute: streamlit run src/streamlit.py
 ```
 
 ---
@@ -101,7 +101,7 @@ Esperado:
 Após validar com sucesso:
 
 ```bash
-streamlit run src/app.py
+streamlit run src/streamlit.py
 ```
 
 Esperado na sidebar:

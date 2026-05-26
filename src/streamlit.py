@@ -1,3 +1,24 @@
+"""Entrypoint wrapper para Streamlit Cloud.
+
+Este arquivo existe para permitir que o app seja iniciado como
+`streamlit run src/streamlit.py` (esperado pelo Streamlit Cloud),
+enquanto evita sombra (shadowing) do pacote `streamlit` durante
+importações em testes locais.
+
+Comportamento:
+- Quando executado como script (via CLI), ele executa o módulo
+  `streamlit_app` como __main__.
+- Quando importado por outro módulo, ele levanta ImportError para
+  que as importações façam fallback para o stub `_stubs.py`.
+"""
+
+if __name__ == "__main__":
+    # Execute o módulo da aplicação real
+    import runpy
+    runpy.run_module('streamlit_app', run_name='__main__')
+else:
+    # Impede que `import streamlit` carregue este arquivo como módulo
+    raise ImportError("Local entrypoint 'src/streamlit.py' is not importable; use the real 'streamlit' package or run as script")
 try:
     import streamlit as st
 except Exception:

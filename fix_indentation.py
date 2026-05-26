@@ -1,7 +1,7 @@
 """Script para indentar o código do assistente dentro do else: block"""
 
 # Ler o arquivo
-with open("src/streamlit.py", "r", encoding="utf-8") as f:
+with open("src/streamlit_app.py", "r", encoding="utf-8") as f:
     lines = f.readlines()
 
 # Encontrar a linha com "else:" que adicionamos (marcada com comentário de página padrão)
@@ -29,7 +29,7 @@ for i in range(else_line_idx + 1, len(lines)):
         new_lines.append(line)
 
 # Salvar de volta
-with open("src/streamlit.py", "w", encoding="utf-8") as f:
+with open("src/streamlit_app.py", "w", encoding="utf-8") as f:
     f.writelines(new_lines)
 
 print("✅ Indentação corrigida!")

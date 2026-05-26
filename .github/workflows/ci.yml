@@ -44,7 +44,7 @@ jobs:
     
     - name: Check Python syntax
       run: |
-        python -m py_compile src/app.py
+        python -m py_compile src/streamlit.py
         python -m py_compile src/config.py
         python -m py_compile src/branding.py
         python -m py_compile src/audit_logs.py

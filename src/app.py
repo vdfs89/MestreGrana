@@ -227,6 +227,45 @@ def mostrar_dashboard():
 
     st.markdown("---")
     st.info("Dashboard alimentado em tempo real pelo MongoDB Atlas e dados locais. KPIs, gráficos e filtros para análise financeira completa.")
+
+
+# Função utilitária: gera um CSV simples com o modelo 50/30/20 para download
+def gerar_modelo_csv_50_30_20(receita: float, despesas: float, saldo: float, mes_ano: str) -> str:
+    """
+    Gera um CSV (string) contendo um resumo mensal e alocação segundo a regra 50/30/20.
+
+    Args:
+        receita: valor da receita esperada/recebida
+        despesas: total de despesas do mês
+        saldo: saldo final
+        mes_ano: mês/ano para rótulo
+
+    Returns:
+        CSV como string (utf-8) pronto para uso em `st.download_button`.
+    """
+    import io
+
+    essencial = round(receita * 0.50, 2)
+    estilo = round(receita * 0.30, 2)
+    futuro = round(receita * 0.20, 2)
+
+    rows = [
+        ["mes_ano", mes_ano],
+        ["receita", f"{receita:.2f}"],
+        ["despesas", f"{despesas:.2f}"],
+        ["saldo", f"{saldo:.2f}"],
+        [],
+        ["alocacao", "valor"],
+        ["essencial_50%", f"{essencial:.2f}"],
+        ["estilo_vida_30%", f"{estilo:.2f}"],
+        ["futuro_20%", f"{futuro:.2f}"],
+    ]
+
+    output = io.StringIO()
+    for r in rows:
+        output.write(",".join([str(x) for x in r]) + "\n")
+
+    return output.getvalue()
 # --- Exibição do menu de navegação na barra lateral ---
 with st.sidebar:
     st.header("📱 Navegação")

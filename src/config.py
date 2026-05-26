@@ -8,6 +8,11 @@ from dotenv import load_dotenv
 # Carrega variáveis do .env (em desenvolvimento local)
 load_dotenv()
 
+# Remover variáveis presentes mas vazias (evita testes falharem se .env tiver chaves sem valor)
+for _k in ("MONGODB_ATLAS_URI", "DATABASE_URL", "GROQ_API_KEY", "GEMINI_API_KEY", "OPENAI_API_KEY"):
+    if _k in os.environ and os.environ[_k] == "":
+        del os.environ[_k]
+
 
 def get_keys():
     """Retorna chaves de API (st.secrets em produção, ENV em dev)."""

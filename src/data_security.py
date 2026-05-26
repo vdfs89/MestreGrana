@@ -8,7 +8,10 @@ import hashlib
 import secrets
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
-import streamlit as st
+try:
+    import streamlit as st
+except Exception:
+    from _stubs import st
 
 
 class DataSecurity:

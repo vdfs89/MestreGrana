@@ -3,7 +3,10 @@ Catálogo de Produtos e Simulador de Cenários.
 Amplia catálogo de produtos financeiros e oferece simulações "what-if".
 """
 
-import streamlit as st
+try:
+    import streamlit as st
+except Exception:
+    from _stubs import st
 import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple

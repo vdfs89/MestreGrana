@@ -3,7 +3,10 @@ Módulo de Branding MestreGrana
 Cores, tipografia e componentes visuais da marca
 """
 
-import streamlit as st
+try:
+    import streamlit as st
+except Exception:
+    from _stubs import st
 
 # Paleta de Cores Oficial
 COLORS = {

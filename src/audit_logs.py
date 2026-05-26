@@ -3,7 +3,10 @@ Auditoria e Logs - Visualização e análise de alterações de dados.
 Integra com a tabela audit_log para conformidade e troubleshooting.
 """
 
-import streamlit as st
+try:
+    import streamlit as st
+except Exception:
+    from _stubs import st
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import Optional, List

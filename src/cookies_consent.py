@@ -3,7 +3,10 @@ Gerenciamento de consentimento de cookies e dados (LGPD).
 Implementa banner de consentimento, armazenamento e conformidade.
 """
 
-import streamlit as st
+try:
+    import streamlit as st
+except Exception:
+    from _stubs import st
 import json
 from datetime import datetime
 from typing import Dict, Optional

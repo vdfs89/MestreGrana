@@ -3,7 +3,10 @@ Exemplos de integração do cliente Neon em Streamlit.
 Para usar no seu app, copie os padrões abaixo.
 """
 
-import streamlit as st
+try:
+    import streamlit as st
+except Exception:
+    from _stubs import st
 from config import get_neon_database
 import pandas as pd
 

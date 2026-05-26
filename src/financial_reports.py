@@ -3,7 +3,10 @@ Relatórios Contábeis - DRE, Fluxo de Caixa, Análise de Variância.
 Gera relatórios financeiros profissionais.
 """
 
-import streamlit as st
+try:
+    import streamlit as st
+except Exception:
+    from _stubs import st
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta

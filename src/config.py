@@ -1,4 +1,7 @@
-import streamlit as st
+try:
+    import streamlit as st
+except Exception:
+    from _stubs import st
 import os
 from dotenv import load_dotenv
 

@@ -1,28 +1,27 @@
-"""Entrypoint wrapper para Streamlit Cloud.
+"""Entrypoint da aplicação Streamlit.
 
-Este arquivo existe para permitir que o app seja iniciado como
-`streamlit run src/streamlit.py` (esperado pelo Streamlit Cloud),
-enquanto evita sombra (shadowing) do pacote `streamlit` durante
-importações em testes locais.
-
-Comportamento:
-- Quando executado como script (via CLI), ele executa o módulo
-  `streamlit_app` como __main__.
-- Quando importado por outro módulo, ele levanta ImportError para
-  que as importações façam fallback para o stub `_stubs.py`.
+Observação importante:
+este arquivo chama-se `streamlit.py`, o que pode sombrear o pacote
+externo `streamlit` durante resolução de import no Python.
 """
 
-if __name__ == "__main__":
-    # Execute o módulo da aplicação real
-    import runpy
-    runpy.run_module('streamlit_app', run_name='__main__')
-else:
-    # Impede que `import streamlit` carregue este arquivo como módulo
+if __name__ != "__main__":
+    # Impede que `import streamlit` carregue este arquivo como módulo.
     raise ImportError("Local entrypoint 'src/streamlit.py' is not importable; use the real 'streamlit' package or run as script")
+
+import os
+import sys
+
+# Evita shadowing deste arquivo (`src/streamlit.py`) ao importar o pacote real.
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_ORIGINAL_SYS_PATH = list(sys.path)
+sys.path = [p for p in sys.path if os.path.abspath(p or os.curdir) != _THIS_DIR]
 try:
     import streamlit as st
 except Exception:
     from _stubs import st
+finally:
+    sys.path = _ORIGINAL_SYS_PATH
 # Garantir que set_page_config seja chamado antes de qualquer outro comando Streamlit
 try:
     st.set_page_config(page_title="MestreGrana", page_icon="💸", layout="wide")
@@ -32,17 +31,6 @@ except Exception:
 import base64
 import pandas as pd
 import json
-import sys
-import os
-
-# Adiciona o diretório src/ ao caminho de importação
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-import base64
-import pandas as pd
-import json
-import sys
-import os
 
 # Adiciona o diretório src/ ao caminho de importação
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

@@ -60,6 +60,15 @@ def apply_custom_theme():
         background-color: {COLORS['dark']};
         border-right: 2px solid {COLORS['primary']};
     }}
+    
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] span, 
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] h1, 
+    [data-testid="stSidebar"] h2, 
+    [data-testid="stSidebar"] h3 {{
+        color: {COLORS['white']} !important;
+    }}
 
     /* Botões */
     .stButton > button {{

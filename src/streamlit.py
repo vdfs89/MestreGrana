@@ -360,12 +360,67 @@ elif pagina == "🎤 Voz":
     try:
         from components.voice import render_voice_input, render_voice_output
         st.title("🎤 Chat com Voz")
+        
+        perfil, produtos, transacoes, historico = ler_dados_financeiros()
+        user_name = perfil.get("nome", "Usuário") if perfil else "Usuário"
+        user_profile = perfil.get("perfil_investidor", "não definido") if perfil else "não definido"
+        
+        st.markdown(f"""
+        Olá, **{user_name}**! Use o botão abaixo para falar com o **MestreGrana**.
+        O assistente irá ouvir sua voz, responder com base no seu perfil (**{user_profile}**) e sintetizar a resposta em áudio.
+        """)
+        
         user_voice = render_voice_input()
         if user_voice:
-            st.success(f"Você disse: {user_voice}")
-            render_voice_output("Ótimo! Recebi sua mensagem de voz.")
-    except ImportError:
-        st.error("❌ Componente de voz não disponível")
+            st.info(f"🎤 **Transcrição:** {user_voice}")
+            
+            # Gera contexto com dados reais
+            transacoes_str = transacoes.to_string() if transacoes is not None else "Nenhuma transação registrada."
+            
+            system_prompt = f"""Você é o MestreGrana, um mentor financeiro experiente e resiliente.
+Seu objetivo é responder a perguntas de voz do usuário de forma falada, ou seja, de maneira curta, direta e natural.
+Aqui estão as informações reais sobre o usuário:
+Nome: {user_name}
+Perfil de Investidor: {user_profile}
+Renda Mensal: R$ {perfil.get('renda_mensal', 0):,.2f}
+Objetivo Principal: {perfil.get('objetivo_principal', 'Não informado')}
+Patrimônio Total: R$ {perfil.get('patrimonio_total', 0):,.2f}
+Reserva de Emergência Atual: R$ {perfil.get('reserva_emergencia_atual', 0):,.2f}
+Metas: {perfil.get('metas', [])}
+
+Últimas transações reais do usuário:
+{transacoes_str}
+
+Instruções para resposta:
+1. Responda de forma extremamente curta (1 a 3 frases no máximo), direta e natural, adequada para ser ouvida por voz.
+2. Fundamente suas respostas nos dados reais fornecidos. Se a resposta requerer dados não disponíveis, diga claramente que não possui essa informação.
+3. Não alucine sobre o saldo ou transações do usuário.
+4. Mantenha as respostas focadas em educação e orientação financeira."""
+
+            chat_context = system_prompt + f"\n\nPergunta do Usuário por voz: {user_voice}\nResposta curta do MestreGrana:"
+            
+            with st.spinner("Pensando..."):
+                response = call_llm_with_fallback(chat_context)
+                
+            if response:
+                st.success(f"🤖 **MestreGrana:** {response}")
+                # Renderiza o botão para reproduzir a resposta
+                render_voice_output(response)
+                
+                # Registra ação na auditoria
+                try:
+                    from audit_logs import log_action
+                    log_action(
+                        user_id=user_name,
+                        action="chat_voz",
+                        details=f"Pergunta por voz: {user_voice[:100]}"
+                    )
+                except Exception:
+                    pass
+            else:
+                st.error("Desculpe, ocorreu um erro ao gerar a resposta com os modelos disponíveis.")
+    except ImportError as e:
+        st.error(f"❌ Componente de voz não disponível: {e}")
 
 elif pagina == "📋 Auditoria":
     if render_audit_page:

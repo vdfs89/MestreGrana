@@ -38,11 +38,15 @@ class _St:
         return None
 
     def cache_resource(self, *a, **k):
+        if a and callable(a[0]):
+            return a[0]
         def deco(f):
             return f
         return deco
 
     def cache_data(self, *a, **k):
+        if a and callable(a[0]):
+            return a[0]
         def deco(f):
             return f
         return deco

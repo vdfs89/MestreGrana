@@ -68,14 +68,14 @@ def call_llm_with_retry(
     temperature=0.7
 ):
     """Call LLM with retry logic and fallback.
-    
+
     Args:
         prompt: str - The prompt to send
         model: str - 'groq', 'gemini', or 'openai'
         max_retries: int - Number of retries (default 3)
         timeout: int - Timeout in seconds
         temperature: float - Temperature for generation
-    
+
     Returns:
         str - Response text or None if failed
     """
@@ -86,21 +86,21 @@ def call_llm_with_retry(
                 if not client:
                     continue
                 response = client.chat.completions.create(
-                    model="llama-3.1-70b-versatile",
+                    model="llama-3.3-70b-versatile",
                     messages=[{"role": "user", "content": prompt}],
                     temperature=temperature,
                     max_tokens=500,
                     timeout=timeout
                 )
                 return response.choices[0].message.content
-            
+
             elif model == "gemini":
                 client = get_gemini_client()
                 if not client:
                     continue
-                response = client.GenerativeModel("gemini-pro").generate_content(prompt)
+                response = client.GenerativeModel("gemini-2.5-flash").generate_content(prompt)
                 return response.text
-            
+
             elif model == "openai":
                 client = get_openai_client()
                 if not client:
@@ -113,7 +113,7 @@ def call_llm_with_retry(
                     timeout=timeout
                 )
                 return response.choices[0].message.content
-        
+
         except Exception as e:
             if attempt < max_retries - 1:
                 wait_time = 2 ** attempt  # Exponential backoff
@@ -121,24 +121,24 @@ def call_llm_with_retry(
                 time.sleep(wait_time)
             else:
                 st.error(f"❌ Falha ao chamar {model}: {str(e)[:100]}")
-    
+
     return None
 
 
 def call_llm_with_fallback(prompt, models=None, temperature=0.7):
     """Call LLM with fallback chain.
-    
+
     Args:
         prompt: str - The prompt
         models: list - Order of models to try (default: ['groq', 'gemini', 'openai'])
         temperature: float - Temperature
-    
+
     Returns:
         str - Response from first successful model or None
     """
     if models is None:
         models = ["groq", "gemini", "openai"]
-    
+
     for model in models:
         response = call_llm_with_retry(
             prompt,
@@ -148,5 +148,5 @@ def call_llm_with_fallback(prompt, models=None, temperature=0.7):
         )
         if response:
             return response
-    
+
     return None

@@ -387,4 +387,120 @@ elif pagina == "💼 Produtos & Simulador":
 
 elif True:
     # Assistente (fallback/default)
-    pass
+    st.subheader("💬 Converse com o MestreGrana")
+
+    perfil, produtos, transacoes, historico = ler_dados_financeiros()
+    user_name = perfil.get("nome", "Usuário") if perfil else "Usuário"
+    user_profile = perfil.get("perfil_investidor", "não definido") if perfil else "não definido"
+
+    st.markdown(f"""
+    Olá, **{user_name}**! Eu sou o **MestreGrana**, seu consultor financeiro inteligente.
+    Com base no seu perfil **{user_profile}** e no seu objetivo principal (**{perfil.get('objetivo_principal', 'não definido')}**), posso lhe ajudar a:
+    - 🎯 **Medir**: Acompanhar seus gastos e receitas.
+    - 📊 **Planejar**: Simular cenários de investimentos.
+    - 📈 **Multiplicar**: Identificar oportunidades para seu perfil.
+    """)
+
+    # Sugestões rápidas
+    st.markdown("💡 **Perguntas frequentes:**")
+    cols = st.columns(3)
+    sugestao_1 = "Como posso completar minha reserva de emergência?"
+    sugestao_2 = "Faça uma análise rápida do meu perfil de gastos deste mês."
+    sugestao_3 = "Quais são as melhores sugestões de investimentos para o meu perfil?"
+
+    prompt = None
+    if cols[0].button("🎯 Reserva de Emergência", use_container_width=True):
+        prompt = sugestao_1
+    elif cols[1].button("📊 Analisar meus Gastos", use_container_width=True):
+        prompt = sugestao_2
+    elif cols[2].button("📈 Onde Investir?", use_container_width=True):
+        prompt = sugestao_3
+
+    # Inicializa o histórico de mensagens se estiver vazio
+    if "messages" not in st.session_state or not st.session_state.messages:
+        st.session_state.messages = [
+            {
+                "role": "assistant",
+                "content": f"Olá {user_name}! Sou o MestreGrana, seu aliado financeiro. Como posso lhe ajudar hoje?"
+            }
+        ]
+
+    # Renderiza mensagens anteriores
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Captura novo input de texto
+    user_input = st.chat_input("Digite sua dúvida financeira...")
+    if user_input:
+        prompt = user_input
+
+    if prompt:
+        # Se for uma pergunta nova, adiciona e exibe
+        if not st.session_state.messages or st.session_state.messages[-1]["content"] != prompt:
+            # Exibe e grava
+            with st.chat_message("user"):
+                st.markdown(prompt)
+            try:
+                from core.state import add_message
+                add_message("user", prompt)
+            except Exception:
+                st.session_state.messages.append({"role": "user", "content": prompt})
+
+            # Gera contexto com dados reais
+            transacoes_str = transacoes.to_string() if transacoes is not None else "Nenhuma transação registrada."
+
+            system_prompt = f"""Você é o MestreGrana, um mentor financeiro experiente e resiliente.
+Seu objetivo é orientar o usuário com base nos seus dados reais e evitar alucinações.
+Aqui estão as informações reais sobre o usuário:
+Nome: {user_name}
+Idade: {perfil.get('idade', 'Não informado')}
+Profissão: {perfil.get('profissao', 'Não informado')}
+Renda Mensal: R$ {perfil.get('renda_mensal', 0):,.2f}
+Perfil de Investidor: {user_profile}
+Objetivo Principal: {perfil.get('objetivo_principal', 'Não informado')}
+Patrimônio Total: R$ {perfil.get('patrimonio_total', 0):,.2f}
+Reserva de Emergência Atual: R$ {perfil.get('reserva_emergencia_atual', 0):,.2f}
+Metas: {perfil.get('metas', [])}
+
+Últimas transações reais do usuário:
+{transacoes_str}
+
+Instruções para resposta:
+1. Responda de forma extremamente clara, estruturada e amigável, em português (Brasil).
+2. Fundamente suas respostas nos dados reais fornecidos. Se a resposta requerer dados não disponíveis, diga claramente que não possui essa informação.
+3. Não invente ou alucine sobre o saldo ou transações do usuário.
+4. Ao dar conselhos sobre investimentos, adeque-se sempre ao perfil de investidor do usuário ({user_profile}).
+5. Mantenha as respostas focadas em educação e orientação financeira. Se o usuário fugir do assunto, guie-o de volta com simpatia."""
+
+            # Cria contexto com histórico
+            chat_context = system_prompt + "\n\nHistórico da conversa:\n"
+            for msg in st.session_state.messages[-6:]:
+                role_name = "Usuário" if msg["role"] == "user" else "Assistente"
+                chat_context += f"{role_name}: {msg['content']}\n"
+            chat_context += "Assistente:"
+
+            with st.chat_message("assistant"):
+                message_placeholder = st.empty()
+                with st.spinner("Pensando..."):
+                    response = call_llm_with_fallback(chat_context)
+                if response:
+                    message_placeholder.markdown(response)
+                    try:
+                        from core.state import add_message
+                        add_message("assistant", response)
+                    except Exception:
+                        st.session_state.messages.append({"role": "assistant", "content": response})
+
+                    # Registra ação na auditoria
+                    try:
+                        from audit_logs import log_action
+                        log_action(
+                            user_id=user_name,
+                            action="chat_assistente",
+                            details=f"Prompt: {prompt[:100]}"
+                        )
+                    except Exception:
+                        pass
+                else:
+                    st.error("Desculpe, os serviços de IA estão offline ou ocupados no momento. Tente novamente.")

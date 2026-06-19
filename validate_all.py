@@ -54,7 +54,7 @@ if "GROQ_API_KEY" in found_vars:
         client = Groq(api_key=found_vars["GROQ_API_KEY"])
         # Test simple call
         response = client.chat.completions.create(
-            model="llama-3.1-70b-versatile",
+            model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": "ping"}],
             max_tokens=10
         )
@@ -69,7 +69,7 @@ if "GEMINI_API_KEY" in found_vars:
     try:
         import google.generativeai as genai
         genai.configure(api_key=found_vars["GEMINI_API_KEY"])
-        model = genai.GenerativeModel("gemini-pro")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         response = model.generate_content("ping", stream=False)
         print("   ✅ Gemini: Funcionando")
     except Exception as e:
@@ -101,12 +101,12 @@ if "DATABASE_URL" in found_vars:
     try:
         import psycopg2
         from psycopg2 import pool
-        
+
         # Create pool
         connection_pool = pool.SimpleConnectionPool(
             2, 10, found_vars["DATABASE_URL"], sslmode="require"
         )
-        
+
         # Test connection
         conn = connection_pool.getconn()
         cur = conn.cursor()
@@ -115,7 +115,7 @@ if "DATABASE_URL" in found_vars:
         cur.close()
         connection_pool.putconn(conn)
         connection_pool.closeall()
-        
+
         pg_version = version.split(",")[0]
         print(f"   ✅ Neon: Conectado - {pg_version}")
     except ImportError:
@@ -133,7 +133,7 @@ print("-" * 70)
 if "MONGODB_ATLAS_URI" in found_vars:
     try:
         from pymongo import MongoClient
-        
+
         client = MongoClient(
             found_vars["MONGODB_ATLAS_URI"],
             tls=True,
